@@ -29,11 +29,11 @@ Built with cutting-edge web and IoT technologies, CycleChain enables users to lo
 
 ## 🔧 Tech Stack
 
-- **Frontend**: React.js + Tailwind CSS  
+- **Frontend**: Next.js + Tailwind CSS  
 - **Backend**: Node.js + Express  
-- **Database**: MySQL / PostgreSQL  
+- **Database**: MySQL 
 - **Hardware**: ESP32, GPS modules, custom IoT PCB  
-- **Hosting**: AWS Lightsail  
+- **Hosting**: Oracle Cloud (Coming soon...)  
 - **APIs**: Google Maps, Nodemailer (for OTP verification), and more
 
 ---
