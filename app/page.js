@@ -1,12 +1,21 @@
+// app/layout.js
 "use client";
 
 import Hero from "@/components/Hero";
-import Image from "next/image";
+import Navbar from "@/components/Navbar";
+import { usePathname } from "next/navigation";
 
-export default function Home() {
+export default function RootLayout({ children }) {
+  const pathname = usePathname();
+  const isOwnerPath = pathname.startsWith("/owner");
+
   return (
-    <>
-      <Hero/>
-    </>
+    <html lang="en">
+      <body>
+        {!isOwnerPath && <Navbar />}
+        {children}
+        <Hero/>
+      </body>
+    </html>
   );
 }
