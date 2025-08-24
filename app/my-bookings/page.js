@@ -1,11 +1,13 @@
+"use client"
 import React, { useEffect, useState } from 'react'
-import { assets, dummyMyBookingsData } from '../assets/assets';
-import Title from '../components/Title';
+import { assets, dummyMyBookingsData } from '@/public/assets/assets';
+import Title from '@/components/Title';
+import Image from 'next/image';
 
 function MyBookings() {
 
   const [booking,setBooking] = useState([]);
-  const currency = import.meta.env.VITE_CURRENCY || '$'; // Get currency from environment variable
+  const currency = process.env.NEXT_PUBLIC_CURRENCY || '$'; 
 
   const fetchMyBookings = async () => {
     setBooking(dummyMyBookingsData)
@@ -30,8 +32,7 @@ function MyBookings() {
             {/* Car Image + Info */}
             <div className='md:col-span-1'>
               <div className='rounded-md overflow-hidden mb-3'>
-                <img src={booking.car.image} alt="" className='w-full h-auto 
-                aspect-video object-cover'/>
+                <Image src={booking.car.image} alt='reserved_bike_image'/>
               </div>
               <p className='text-lg font-medium mt-2'>{booking.car.brand} {booking
               .car.model}</p>
@@ -50,7 +51,7 @@ function MyBookings() {
               </div>
 
               <div className='flex items-start gap-2 mt-3'>
-                <img src={assets.calendar_icon_colored} alt="" className='w-4 h-4 mt-1'/>
+                <Image src={assets.calendar_icon_colored} alt="" className='w-4 h-4 mt-1'/>
                 <div>
                   <p className='text-gray-500'>Rental Priod</p>
                   <p>{booking.pickupDate.split('T')[0]} to {booking.returnDate.split('T')[0]}</p>
@@ -59,7 +60,7 @@ function MyBookings() {
               </div>
 
               <div className='flex items-start gap-2 mt-3'>
-                <img src={assets.location_icon_colored} alt="" className='w-4 h-4 mt-1'/>
+                <Image src={assets.location_icon_colored} alt="" className='w-4 h-4 mt-1'/>
                 <div>
                   <p className='text-gray-500'>Pick-up Location</p>
                   <p>{booking.car.location}</p>

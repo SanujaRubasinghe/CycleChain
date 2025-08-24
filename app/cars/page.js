@@ -1,7 +1,9 @@
+"use client"
 import React, { useState } from 'react'
-import Title from '../components/Title'
-import { assets, dummyCarData } from '../assets/assets'
-import CarCard from '../components/CarCard';
+import Title from '@/components/Title';
+import { assets, dummyCarData } from '@/public/assets/assets';
+import CarCard from '@/components/CarCard';
+import Image from 'next/image';
 
 function Cars() {
 
@@ -17,13 +19,13 @@ function Cars() {
 
       <div className='flex items-center bg-white px-4 mt-6 max-w-140 w-full h-12
       rounded-full shadow'>
-        <img src={assets.search_icon} alt="" className='w-4.5 h-4.5 mr-2'/>
+        <Image src='assets/search_icon.svg' width={16} height={16} alt='search_icon'/>
 
-        <input onClick={(e)=> setInput(e.target.value)} value={input} type="text" 
+        <input onChange={(e)=> setInput(e.target.value)} value={input} type="text" 
         placeholder='Search by make, model, or features'
         className='w-full h-full outline-none text-gray-500'/>
 
-        <img src={assets.filter_icon} alt="" className='w-4.5 h-4.5 ml-2'/>
+        <Image src='assets/filter_icon.svg' width={16} height={16} alt='filter_icon'/>
 
       </div>
    
