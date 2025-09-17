@@ -1,55 +1,85 @@
-# 🚲 CycleChain – Smart E-Bike Rental System
+# Cycle Chain Client
 
-**CycleChain** is an innovative, privacy-focused smart e-bike rental platform designed for seamless urban commuting.  
-Built with cutting-edge web and IoT technologies, CycleChain enables users to locate, unlock, ride, and return e-bikes with ease—while prioritizing **data privacy** and **real-time control**.
+A Next.js application with authentication system.
 
----
+## Setup Instructions
 
-## 🌟 Key Features
+### 1. Install Dependencies
 
-- 🔐 **Extreme Privacy**  
-  Live tracking data is auto-deleted after rides; even admins can't view user routes unless explicitly permitted in emergencies.
+```bash
+npm install
+```
 
-- 📍 **Live Location Sharing**  
-  Real-time GPS tracking during active rides with emergency-only override access.
+### 2. Environment Variables
 
-- 🛠️ **Maintenance Management**  
-  Track bike health, flag issues, and assign tasks to technicians through an intuitive admin panel.
+Create a `.env.local` file in the client directory with the following variables:
 
-- 📆 **Smart Booking System**  
-  Reserve bikes in advance, view availability, and get notified on usage stats.
+```env
+# Database
+MONGODB_URI=mongodb://localhost:27017/cycle-chain
 
-- 🧠 **AI-Driven Insights** *(coming soon)*  
-  Predictive analytics for demand, optimal fleet distribution, and battery health.
+# NextAuth.js
+NEXTAUTH_SECRET=your-secret-key-here
+NEXTAUTH_URL=http://localhost:3000
+```
 
-- 🔗 **IoT Integration**  
-  Seamless ESP32-WROOM-32D-based control units for remote locking, unlocking, and diagnostics.
+### 3. Generate NEXTAUTH_SECRET
 
----
+You can generate a secure secret using:
 
-## 🔧 Tech Stack
+```bash
+openssl rand -base64 32
+```
 
-- **Frontend**: Next.js + Tailwind CSS  
-- **Backend**: Node.js + Express  
-- **Database**: MySQL 
-- **Hardware**: ESP32, GPS modules, custom IoT PCB  
-- **Hosting**: Oracle Cloud (Coming soon...)  
-- **APIs**: Google Maps, Nodemailer (for OTP verification), and more
+### 4. Database Setup
 
----
+Make sure you have MongoDB running locally or update the MONGODB_URI to point to your MongoDB instance.
 
-## 📂 Modules
+### 5. Run the Application
 
-- 👤 **User App** – Booking, Tracking, Emergency  
-- 🛠️ **Admin Dashboard** – Bike & User Management  
-- 📡 **IoT Firmware** – ESP32-based Smart Control Unit  
-- 🔄 **Web App–IoT Communication** – via MQTT/HTTPS
+```bash
+npm run dev
+```
 
----
+## Features
 
-## ♻️ Why CycleChain?
+- User registration and login
+- JWT-based authentication with NextAuth.js
+- Protected routes with middleware
+- User dashboard
+- Session management
 
-CycleChain empowers eco-friendly mobility with transparency, control, and respect for user data.  
-🚴 Join us in transforming urban transport.
+## API Endpoints
 
----
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/[...nextauth]` - NextAuth.js authentication
+- `GET /api/auth/[...nextauth]` - NextAuth.js session management
+
+## Authentication Flow
+
+1. Users can register at `/register`
+2. Users can login at `/login`
+3. Authenticated users are redirected to `/dashboard`
+4. Protected routes are automatically secured
+5. Users can sign out from the dashboard
+
+## File Structure
+
+```
+client/
+├── app/
+│   ├── api/auth/
+│   │   ├── [...nextauth]/route.js
+│   │   └── register/route.js
+│   ├── (user_management)/
+│   │   ├── login/page.js
+│   │   └── register/page.js
+│   └── dashboard/page.js
+├── components/
+│   └── Providers.js
+├── lib/
+│   └── db.js
+├── models/
+│   └── User.js
+└── middleware.js
+```

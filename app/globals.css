@@ -1,26 +1,29 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* Theme tokens (example) */
 :root {
-  --background: #ffffff;
-  --foreground: #4c515d;
+  --bg: #0b1220;
+  --surface: #0f172a;
+  --border: #1f2937;
+  --subtext: #9ca3af;
+  --primary: #3264ff;
 }
+html, body { background: var(--bg); }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* Shortcuts used above */
+.from-background { --tw-gradient-from: var(--bg) var(--tw-gradient-from-position); }
+.to-surface { --tw-gradient-to: var(--surface) var(--tw-gradient-to-position); }
+.bg-surface { background-color: var(--surface); }
+.border-border { border-color: var(--border); }
+.text-subtext { color: var(--subtext); }
+.text-primary { color: var(--primary); }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.card { @apply bg-surface border border-border rounded-2xl shadow p-4 text-white; }
+.input {
+  @apply w-full rounded-xl border border-border bg-surface text-white px-3 py-2 outline-none;
 }
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+.btn { @apply inline-flex items-center justify-center rounded-xl px-4 py-2 border border-border; }
+.btn-primary { @apply btn bg-[var(--primary)] border-transparent text-white hover:opacity-90; }
+.btn-ghost { @apply btn bg-transparent text-subtext hover:text-white; }
