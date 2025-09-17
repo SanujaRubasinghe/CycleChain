@@ -62,7 +62,7 @@ export default function MyFeedbacks() {
   };
 
   const handleEdit = (feedbackId) => {
-    router.push(`/update_form?id=${feedbackId}`);
+    router.push(`/feedback/update_form?id=${feedbackId}`);
   };
 
   return (

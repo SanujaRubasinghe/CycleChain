@@ -98,7 +98,7 @@ export default function UpdateFeedbackForm() {
       if (response.ok) {
         setMessage('Feedback updated successfully!');
         setTimeout(() => {
-          router.push('/my_feedbacks');
+          router.push('/feedback/my_feedbacks');
         }, 1500);
       } else {
         setMessage(result.message || 'Failed to update feedback');

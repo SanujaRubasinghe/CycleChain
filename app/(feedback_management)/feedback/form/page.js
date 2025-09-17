@@ -29,7 +29,7 @@ export default function FeedbackForm() {
     if (message.includes('successfully') && !redirecting) {
       setRedirecting(true);
       const timer = setTimeout(() => {
-        router.push('/my_feedbacks');
+        router.push('/feedback/my_feedbacks');
       }, 1500);
       
       return () => clearTimeout(timer);
@@ -78,7 +78,7 @@ export default function FeedbackForm() {
           message: '',
           rating: 5
         });
-        router.push('/my_feedbacks')
+        router.push('/feedback/my_feedbacks')
       } else {
         const error = await response.json();
         setMessage(error.message || 'Failed to submit feedback');
