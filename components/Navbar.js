@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 const menuLinks = [
   { name: "Home", path: "/" },
-  { name: "Cars", path: "/cars" },
+  { name: "Bikes", path: "/cars" },
   { name: "My Bookings", path: "/my-bookings" },
 ];
 
