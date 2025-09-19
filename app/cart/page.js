@@ -2,6 +2,34 @@
 
 import { useEffect, useState } from "react";
 
+// --- Eco Impact (added) ---
+function EcoImpact({ itemsCount }) {
+  // Simple friendly estimate; tweak factor if you like
+  const avoided = (itemsCount * 0.35).toFixed(1);
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4 mt-4">
+      <h3 className="text-white font-medium text-lg">Good for you. Good for the city.</h3>
+      <p className="text-sm text-subtext mt-2">
+        Choosing cycling accessories reduces car trips and CO₂. Keep it up! 💚
+      </p>
+      <div className="mt-3 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="text-subtext">Items in this order</span>
+          <span className="text-white">{itemsCount}</span>
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-subtext">Estimated CO₂ avoided*</span>
+          <span className="text-white">~{avoided} kg</span>
+        </div>
+      </div>
+      <p className="text-xs text-subtext/80 mt-2">
+        *Rough indicative value. Actual impact varies by usage.
+      </p>
+    </div>
+  );
+}
+
 export default function CartPage() {
   const [cart, setCart] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
@@ -203,6 +231,9 @@ export default function CartPage() {
               >
                 Clear
               </button>
+
+              {/* Eco Impact (added) */}
+              <EcoImpact itemsCount={items.reduce((s, i) => s + (i.qty ?? 0), 0)} />
             </aside>
           </div>
         )}

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useMemo } from "react";
 
 const LABEL = {
   helmets: "Helmets",
@@ -15,18 +14,16 @@ const LABEL = {
 };
 
 export default function StorePage() {
-  const router = useRouter();
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        setErr("");
         const r = await fetch("/api/products", { cache: "no-store" });
         if (!r.ok) throw new Error("Failed to load products");
         const data = await r.json();
@@ -39,18 +36,19 @@ export default function StorePage() {
     })();
   }, []);
 
-  const filtered = useMemo(() => {
-    const qn = q.trim().toLowerCase();
+  const items = useMemo(() => {
+    const query = q.trim().toLowerCase();
     return products.filter((p) => {
-      const byCat = cat === "all" || p.category === cat;
-      const byQ =
-        !qn ||
-        p.title?.toLowerCase().includes(qn) ||
-        LABEL[p.category || ""]?.toLowerCase().includes(qn);
-      return byCat && byQ;
+      const catOk = cat === "all" || p.category === cat;
+      const qOk =
+        !query ||
+        p.title?.toLowerCase().includes(query) ||
+        LABEL[p.category || ""]?.toLowerCase().includes(query);
+      return catOk && qOk;
     });
   }, [products, q, cat]);
 
+  // --- minimal addition: add to cart helper ---
   const addToCart = async (productId) => {
     try {
       const res = await fetch("/api/store-cart", {
@@ -59,17 +57,17 @@ export default function StorePage() {
         credentials: "include",
         body: JSON.stringify({ productId, qty: 1 }),
       });
+
       if (res.status === 401) {
-        // not logged in → ask to login and come back to /store
-        router.push("/login?callbackUrl=/store");
+        window.location.href = "/login?callbackUrl=/store";
         return;
       }
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.message || "Failed to add to cart");
+        const txt = await res.text();
+        throw new Error(txt || "Failed to add to cart");
       }
-      // success → go to cart
-      router.push("/cart");
+
+      window.location.href = "/cart";
     } catch (e) {
       alert(e.message || "Could not add to cart");
     }
@@ -78,7 +76,6 @@ export default function StorePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-surface">
       <div className="container mx-auto px-4 py-10">
-        {/* header / filters */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
           <div>
             <h1 className="text-3xl font-semibold text-white">Cycle Store</h1>
@@ -112,16 +109,14 @@ export default function StorePage() {
           </div>
         </div>
 
-        {/* states */}
         {loading && <div className="card p-4">Loading…</div>}
         {err && <div className="card p-4 text-red-400">{err}</div>}
-        {!loading && !err && filtered.length === 0 && (
+        {!loading && !err && items.length === 0 && (
           <div className="card p-4">No items match your filter.</div>
         )}
 
-        {/* product grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((p) => (
+          {items.map((p) => (
             <article key={p._id} className="card p-4 flex flex-col">
               <div className="h-44 rounded-xl bg-surface border border-border overflow-hidden mb-3">
                 {p.image ? (
@@ -142,13 +137,13 @@ export default function StorePage() {
               <h3 className="text-lg font-medium text-white line-clamp-2">{p.title}</h3>
               <div className="mt-1">LKR {p.price}</div>
 
+              {/* minimal change: use button to call addToCart */}
               <button
+                type="button"
                 className="btn btn-primary mt-4"
                 onClick={() => addToCart(p._id)}
-                disabled={!p.inStock}
-                title={p.inStock ? "Add to cart" : "Out of stock"}
               >
-                {p.inStock ? "Add to Cart" : "Out of stock"}
+                Add to Cart
               </button>
             </article>
           ))}

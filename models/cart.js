@@ -1,21 +1,26 @@
-import mongoose, { Schema, models } from "mongoose";
+// client/models/Cart.js
+import mongoose from "mongoose";
 
-const CartItemSchema = new Schema(
+const CartItemSchema = new mongoose.Schema(
   {
-    product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     qty: { type: Number, default: 1, min: 1 },
-    // snapshot to keep price stable even if product changes later
-    priceSnapshot: { type: Number, required: true },
+    priceSnapshot: { type: Number, required: true }, // store price at time of add
   },
-  { _id: true }
+  { _id: true, timestamps: true }
 );
 
-const CartSchema = new Schema(
+const CartSchema = new mongoose.Schema(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", index: true, required: true, unique: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true, index: true },
     items: [CartItemSchema],
+    total: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
 
-export default models.Cart || mongoose.model("Cart", CartSchema);
+CartSchema.methods.recalc = function () {
+  this.total = this.items.reduce((s, i) => s + (i.priceSnapshot * i.qty), 0);
+};
+
+export default mongoose.models.Cart || mongoose.model("Cart", CartSchema);

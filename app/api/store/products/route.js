@@ -1,5 +1,5 @@
 import { connectToDB } from "@/lib/db";
-import Product from "@/models/product";
+import Product from "@/models/Product";
 
 export async function GET(req) {
   await connectToDB();
