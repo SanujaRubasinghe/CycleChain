@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function UpdateFeedbackForm() {
+function UpdateFeedbackForm() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -229,4 +230,12 @@ export default function UpdateFeedbackForm() {
       </div>
     </div>
   );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <UpdateFeedbackForm />
+    </Suspense>
+  )
 }
