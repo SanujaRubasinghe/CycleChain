@@ -4,6 +4,7 @@ import Providers from "@/components/Providers";
 import "./globals.css";
 
 import AiAssistant from "@/components/ai-chatbot/AiAssistant";
+import CurrentReservationPopup from "@/components/reservation/CurrentReservationPopup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,8 +29,9 @@ export default function RootLayout({ children }) {
       >
         <Providers>
           <Navbar />
+          <CurrentReservationPopup />
           {children}
-        <AiAssistant/>
+          <AiAssistant />
         </Providers>
       </body>
     </html>

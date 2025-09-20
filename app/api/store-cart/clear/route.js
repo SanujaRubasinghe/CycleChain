@@ -1,30 +1,21 @@
-// app/api/store-cart/clear/route.js
+// client/app/api/store-cart/clear/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
-import { connectToDB } from "@/lib/db";
-import Cart from "@/models/cart";
-import { serializeCart } from "../_helpers";
-
-export const dynamic = "force-dynamic";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { dbConnect } from "@/lib/mongodb";
+import Cart from "@/models/Cart";
 
 export async function POST() {
-  // Must be signed in
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  if (!session?.user?.id)
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
 
-  await connectToDB();
+  await dbConnect();
+  const cart = await Cart.findOne({ user: session.user.id });
+  if (!cart) return NextResponse.json({ items: [], total: 0 });
 
-  // Clear items (create cart if it doesn't exist)
-  const cart = await Cart.findOneAndUpdate(
-    { user: session.user.id },
-    { $set: { items: [] } },
-    { new: true, upsert: true }
-  ).populate("items.product");
-
-  return NextResponse.json(serializeCart(cart), {
-    headers: { "Cache-Control": "no-store" },
-  });
+  cart.items = [];
+  cart.total = 0;
+  await cart.save();
+  return NextResponse.json({ items: [], total: 0 });
 }

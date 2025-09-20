@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Suspense } from 'react';
 
 function UpdateFeedbackForm() {
+  const {data: session} = useSession()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,7 +22,7 @@ function UpdateFeedbackForm() {
   const feedbackId = searchParams.get('id');
 
   useEffect(() => {
-    const storedUserId = localStorage.getItem('feedbackUserId');
+    const storedUserId = session.user.id
     if (storedUserId) {
       setUserId(storedUserId);
     }
@@ -99,7 +101,7 @@ function UpdateFeedbackForm() {
       if (response.ok) {
         setMessage('Feedback updated successfully!');
         setTimeout(() => {
-          router.push('/feedback/my_feedbacks');
+          router.push('/profile');
         }, 1500);
       } else {
         setMessage(result.message || 'Failed to update feedback');

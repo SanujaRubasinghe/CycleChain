@@ -30,12 +30,13 @@ const rentalSessionSchema = new mongoose.Schema({
         lat: Number,
         lng: Number
     },
+    unlock_code : {type: String},
     distance: Number,
     cost: Number,
     geofence_violation: [Date],
     status: {
         type: String,
-        enum: ["reserved", "in_progress", "completed", "pending", "active", "cancelled"], // Added all possible status values
+        enum: ["reserved", "in_progress", "completed-payment-pending", "completed-paid", "active", "cancelled"], 
         default: "reserved"
     }
 }, {
@@ -43,7 +44,6 @@ const rentalSessionSchema = new mongoose.Schema({
     collection: 'reservations'
 });
 
-// Static methods
 rentalSessionSchema.statics.isTimeMismatch = async function(start_time, end_time) {
     return new Date(start_time) <= new Date(end_time);
 };
@@ -68,7 +68,5 @@ rentalSessionSchema.pre('save', function(next) {
     next();
 });
 
-const Reservation = mongoose.models.Reservation ||
-    mongoose.model('reservations', rentalSessionSchema);
+export default mongoose.models.Reservation || mongoose.model('Reservation', rentalSessionSchema);
 
-export default Reservation;

@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 export default function MyFeedbacks() {
+  const {data: session, status} = useSession()
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -11,8 +13,8 @@ export default function MyFeedbacks() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user ID exists in localStorage
-    const storedUserId = localStorage.getItem('feedbackUserId');
+    const storedUserId = session
+    console.log(storedUserId)
     if (storedUserId) {
       setUserId(storedUserId);
       fetchUserFeedbacks(storedUserId);

@@ -1,16 +1,13 @@
-// app/api/auth/register/route.js
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { connectToDB } from "@/lib/db";
-import User from "@/models/user"; // <-- match the actual file name exactly
-
-export const dynamic = "force-dynamic";
+import { dbConnect } from "@/lib/mongodb";
+import User from "@/models/User";
 
 export async function POST(req) {
   try {
     const { username, email, password } = await req.json();
 
-    // Basic validation
+    // basic validation
     if (!username || !email || !password) {
       return NextResponse.json(
         { message: "username, email and password are required" },
@@ -24,14 +21,10 @@ export async function POST(req) {
       );
     }
 
-    await connectToDB();
+    await dbConnect();
 
-    // Normalize
-    const normEmail = String(email).toLowerCase().trim();
-    const normUsername = String(username).trim();
-
-    // Uniqueness
-    const emailExists = await User.findOne({ email: normEmail }).lean();
+    // unique checks
+    const emailExists = await User.findOne({ email: email.toLowerCase() });
     if (emailExists) {
       return NextResponse.json(
         { message: "Email already registered" },
@@ -39,7 +32,8 @@ export async function POST(req) {
       );
     }
 
-    const usernameExists = await User.findOne({ username: normUsername }).lean();
+    // (optional) unique username check
+    const usernameExists = await User.findOne({ username });
     if (usernameExists) {
       return NextResponse.json(
         { message: "Username already taken" },
@@ -47,17 +41,16 @@ export async function POST(req) {
       );
     }
 
-    // Hash & create
+    // hash password
     const hash = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      email: normEmail,
-      username: normUsername,
+      email: email.toLowerCase(),
+      username,
       password: hash,
-      role: "user",
+      role: "user", // default role
     });
 
-    // Return minimal public info
     return NextResponse.json(
       {
         id: user._id.toString(),
@@ -68,18 +61,7 @@ export async function POST(req) {
       { status: 201 }
     );
   } catch (err) {
-    // Surface useful details to your dev console
-    console.error("POST /api/auth/register error:", err?.message || err);
-
-    // If it's a Mongo duplicate key error, provide a readable message
-    if (err?.code === 11000) {
-      const field = Object.keys(err.keyPattern || {})[0] || "field";
-      return NextResponse.json(
-        { message: `Duplicate ${field}` },
-        { status: 409 }
-      );
-    }
-
+    console.error("POST /api/auth/register error", err);
     return NextResponse.json(
       { message: "Registration failed" },
       { status: 500 }

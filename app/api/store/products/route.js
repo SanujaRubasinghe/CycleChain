@@ -1,8 +1,8 @@
-import { connectToDB } from "@/lib/db";
-import Product from "@/models/product";
+import { dbConnect } from "@/lib/mongodb";
+import Product from "@/models/Product";
 
 export async function GET(req) {
-  await connectToDB();
+  await dbConnect();
   const { searchParams } = new URL(req.url);
   const cat = searchParams.get("category");
   const q = searchParams.get("q");

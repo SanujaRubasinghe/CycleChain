@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
+import { dbConnect } from '@/lib/mongodb';
 import Feedback from '@/models/Feedback';
 
 // GET specific feedback by ID
 export async function GET(request, { params }) {
   try {
     await dbConnect();
-    const feedback = await Feedback.findById(params.id);
+    const {id} = await params
+    const feedback = await Feedback.findById(id);
     
     if (!feedback) {
       return NextResponse.json(
@@ -30,9 +31,10 @@ export async function PUT(request, { params }) {
   try {
     await dbConnect();
     const body = await request.json();
+    const {id} = await params
     
     // Validate required fields
-    const { name, email, message, rating, userId } = body;
+    const { name, email, message, rating, userId} = body;
     
     if (!name || !email || !message || !rating) {
       return NextResponse.json(
@@ -50,7 +52,7 @@ export async function PUT(request, { params }) {
     }
 
     // Find and update feedback
-    const feedback = await Feedback.findById(params.id);
+    const feedback = await Feedback.findById(id);
     
     if (!feedback) {
       return NextResponse.json(
@@ -86,13 +88,13 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE feedback
 export async function DELETE(request, { params }) {
   try {
     await dbConnect();
+    const {id} = await params
     
     // Find feedback first to check ownership
-    const feedback = await Feedback.findById(params.id);
+    const feedback = await Feedback.findById(id);
     
     if (!feedback) {
       return NextResponse.json(
@@ -100,13 +102,8 @@ export async function DELETE(request, { params }) {
         { status: 404 }
       );
     }
-
-    // For now, we'll allow deletion of any feedback
-    // In a real app, you'd want to check user permissions here
-    // For admin users, they can delete any feedback
-    // For regular users, they can only delete their own
     
-    await Feedback.findByIdAndDelete(params.id);
+    await Feedback.findByIdAndDelete(id);
     
     return NextResponse.json({
       message: 'Feedback deleted successfully'

@@ -1,43 +1,47 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import User from '@/models/user';
-import { connectToDB } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import User from "@/models/User";
+import { dbConnect } from "@/lib/mongodb";
+import bcrypt from "bcryptjs";
 
 export const authOptions = {
   providers: [
     CredentialsProvider({
-      name: 'credentials',
+      name: "credentials",
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        await connectToDB();
-        
+        await dbConnect();
+
         const { email, password } = credentials;
-        
+
         // Find user by email
         const user = await User.findOne({ email });
         if (!user) {
-          throw new Error('Invalid email or password');
+          throw new Error("Invalid email or password");
         }
-        
+
         // Check password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-          throw new Error('Invalid email or password');
+          throw new Error("Invalid email or password");
         }
-        
+
         return {
           id: user._id.toString(),
           email: user.email,
           name: user.username,
-          role: user.role
+          role: user.role,
         };
-      }
-    })
+      },
+    }),
   ],
+  session: {
+    strategy: "jwt"
+  },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -52,12 +56,12 @@ export const authOptions = {
         session.user.id = token.userId;
       }
       return session;
-    }
+    },
   },
   pages: {
-    signIn: '/login',
-    signUp: '/register'
-  }
+    signIn: "/login",
+    signUp: "/signup",
+  },
 };
 
 const handler = NextAuth(authOptions);
