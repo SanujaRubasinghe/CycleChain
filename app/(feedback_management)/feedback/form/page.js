@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 export default function FeedbackForm() {
+  const {data: session, status} = useSession()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -17,11 +19,7 @@ export default function FeedbackForm() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user ID exists in localStorage
-    const storedUserId = localStorage.getItem('feedbackUserId');
-    if (storedUserId) {
-      setUserId(storedUserId);
-    }
+    setUserId(session.user.id)
   }, []);
 
   useEffect(() => {
@@ -78,7 +76,7 @@ export default function FeedbackForm() {
           message: '',
           rating: 5
         });
-        router.push('/feedback/my_feedbacks')
+        router.push('/feedback')
       } else {
         const error = await response.json();
         setMessage(error.message || 'Failed to submit feedback');

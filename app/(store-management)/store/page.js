@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useMemo } from "react";
 
 const LABEL = {
   helmets: "Helmets",
@@ -15,18 +14,16 @@ const LABEL = {
 };
 
 export default function StorePage() {
-  const router = useRouter();
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        setErr("");
         const r = await fetch("/api/products", { cache: "no-store" });
         if (!r.ok) throw new Error("Failed to load products");
         const data = await r.json();
@@ -39,15 +36,15 @@ export default function StorePage() {
     })();
   }, []);
 
-  const filtered = useMemo(() => {
-    const qn = q.trim().toLowerCase();
+  const filteredItems = useMemo(() => {
+    const query = q.trim().toLowerCase();
     return products.filter((p) => {
-      const byCat = cat === "all" || p.category === cat;
-      const byQ =
-        !qn ||
-        p.title?.toLowerCase().includes(qn) ||
-        LABEL[p.category || ""]?.toLowerCase().includes(qn);
-      return byCat && byQ;
+      const catOk = cat === "all" || p.category === cat;
+      const queryOk =
+        !query ||
+        p.title?.toLowerCase().includes(query) ||
+        LABEL[p.category || ""]?.toLowerCase().includes(query);
+      return catOk && queryOk;
     });
   }, [products, q, cat]);
 
@@ -60,70 +57,72 @@ export default function StorePage() {
         body: JSON.stringify({ productId, qty: 1 }),
       });
       if (res.status === 401) {
-        // not logged in → ask to login and come back to /store
-        router.push("/login?callbackUrl=/store");
+        window.location.href = "/login?callbackUrl=/store";
         return;
       }
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.message || "Failed to add to cart");
+        const txt = await res.text();
+        throw new Error(txt || "Failed to add to cart");
       }
-      // success → go to cart
-      router.push("/cart");
+      window.location.href = "/store/cart";
     } catch (e) {
       alert(e.message || "Could not add to cart");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-surface">
-      <div className="container mx-auto px-4 py-10">
-        {/* header / filters */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
           <div>
-            <h1 className="text-3xl font-semibold text-white">Cycle Store</h1>
-            <p className="text-subtext">Find accessories for your ride.</p>
+            <h1 className="text-4xl font-bold text-green-700">Cycle Store</h1>
+            <p className="text-green-600 mt-1">Find all the accessories for your ride</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <input
-              className="input w-full sm:w-72"
+              type="text"
               placeholder="Search items…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
+              className="input w-full sm:w-72 border border-green-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
             />
             <select
-              className="input"
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              title="Category filter"
+              className="input border border-green-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
             >
               <option value="all">All categories</option>
-              <option value="helmets">Helmets</option>
-              <option value="locks">Bike Locks</option>
-              <option value="bottles">Water Bottles</option>
-              <option value="seat-covers">Seat Covers</option>
-              <option value="gloves">Gloves</option>
-              <option value="ebike-cables">E-Bike Cables</option>
-              <option value="chargers">Chargers</option>
-              <option value="backpacks">Backpacks</option>
+              {Object.keys(LABEL).map((key) => (
+                <option key={key} value={key}>{LABEL[key]}</option>
+              ))}
             </select>
-            <a href="/cart" className="btn btn-primary">Cart</a>
+            <a
+              href="/store/cart"
+              className="bg-green-700 hover:bg-green-800 text-white font-semibold rounded-lg px-4 py-2 flex items-center justify-center transition"
+            >
+              Cart
+            </a>
           </div>
         </div>
 
-        {/* states */}
-        {loading && <div className="card p-4">Loading…</div>}
-        {err && <div className="card p-4 text-red-400">{err}</div>}
-        {!loading && !err && filtered.length === 0 && (
-          <div className="card p-4">No items match your filter.</div>
+        {/* Loading/Error */}
+        {loading && <div className="text-green-700 font-medium">Loading products...</div>}
+        {err && <div className="text-red-500 font-medium">{err}</div>}
+        {!loading && !err && filteredItems.length === 0 && (
+          <div className="text-green-700 font-medium">No items match your search.</div>
         )}
 
-        {/* product grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((p) => (
-            <article key={p._id} className="card p-4 flex flex-col">
-              <div className="h-44 rounded-xl bg-surface border border-border overflow-hidden mb-3">
+        {/* Product Grid */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+          {filteredItems.map((p) => (
+            <article
+              key={p._id}
+              className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-200 overflow-hidden flex flex-col"
+            >
+              {/* Product Image */}
+              <div className="relative h-48 bg-gray-100 border-b border-green-200">
                 {p.image ? (
                   <img
                     src={p.image}
@@ -132,24 +131,28 @@ export default function StorePage() {
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-subtext">
-                    No image
+                  <div className="w-full h-full flex items-center justify-center text-green-400">
+                    No Image
                   </div>
                 )}
               </div>
 
-              <div className="text-sm text-subtext">{LABEL[p.category] || p.category}</div>
-              <h3 className="text-lg font-medium text-white line-clamp-2">{p.title}</h3>
-              <div className="mt-1">LKR {p.price}</div>
+              {/* Product Info */}
+              <div className="flex-1 p-4 flex flex-col justify-between">
+                <div>
+                  <span className="text-sm text-green-600 font-medium">{LABEL[p.category] || p.category}</span>
+                  <h3 className="text-lg font-semibold text-green-700 mt-1 line-clamp-2">{p.title}</h3>
+                  <div className="text-green-700 font-bold mt-2">LKR {p.price}</div>
+                </div>
 
-              <button
-                className="btn btn-primary mt-4"
-                onClick={() => addToCart(p._id)}
-                disabled={!p.inStock}
-                title={p.inStock ? "Add to cart" : "Out of stock"}
-              >
-                {p.inStock ? "Add to Cart" : "Out of stock"}
-              </button>
+                {/* Add to Cart Button */}
+                <button
+                  onClick={() => addToCart(p._id)}
+                  className="mt-4 bg-green-700 hover:bg-green-800 text-white font-semibold py-2 rounded-lg transition"
+                >
+                  Add to Cart
+                </button>
+              </div>
             </article>
           ))}
         </div>
