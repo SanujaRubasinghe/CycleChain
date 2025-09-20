@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { dbConnect } from "@/lib/mongodb";
-import User from "@/models/User"; // ensure casing matches your file
+import User from "@/models/User"; 
 import Reservation from "@/models/Reservation";
-import Cart from "@/models/Cart"; // optional cleanup if you use it
+import Cart from "@/models/Cart"; 
 import bcrypt from "bcryptjs";
 
 export const dynamic = "force-dynamic";
@@ -23,17 +23,18 @@ export async function GET() {
 
   // Usage summary
   const summaryAgg = await Reservation.aggregate([
-    { $match: { user: user._id } },
+    { $match: { userId: session.user.id } },
     {
       $group: {
         _id: null,
         totalRides: { $sum: 1 },
-        totalDistance: { $sum: "$distanceKm" },
+        totalDistance: { $sum: "$distance" },
         totalCost: { $sum: "$cost" },
-        lastRideAt: { $max: "$endTime" },
+        lastRideAt: { $max: "$end_time" },
       },
     },
   ]);
+
   const summary = summaryAgg[0] || {
     totalRides: 0,
     totalDistance: 0,
@@ -43,7 +44,7 @@ export async function GET() {
 
   return NextResponse.json(
     {
-      id: user._id.toString(),
+      id: session.user.id,
       email: user.email,
       username: user.username,
       role: user.role,

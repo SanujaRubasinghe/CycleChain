@@ -408,13 +408,13 @@ export default function UserProfilePage() {
                               {r.bikeId}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(r.startTime).toLocaleString()}
+                              {new Date(r.start_time).toLocaleString()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(r.endTime).toLocaleString()}
+                              {new Date(r.end_time).toLocaleString()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {r.distanceKm} km
+                              {r.distance} km
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               LKR {r.cost}

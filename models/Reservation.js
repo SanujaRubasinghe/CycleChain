@@ -31,7 +31,7 @@ const rentalSessionSchema = new mongoose.Schema({
         lng: Number
     },
     unlock_code : {type: String},
-    distance: Number,
+    distance: {type: Number, default: 0}, 
     cost: Number,
     geofence_violation: [Date],
     status: {
