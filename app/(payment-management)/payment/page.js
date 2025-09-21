@@ -76,7 +76,6 @@ export default function CheckoutPage() {
     try {
       let txHash = null;
 
-      // ✅ If crypto method, trigger MetaMask transaction
       if (method === "crypto" && success) {
         if (!window.ethereum) {
           throw new Error("MetaMask not installed");
@@ -86,9 +85,8 @@ export default function CheckoutPage() {
         await provider.send("eth_requestAccounts", []);
         const signer = await provider.getSigner();
 
-        // Example: send 0.01 ETH → replace with dynamic cost if needed
         const tx = await signer.sendTransaction({
-          to: process.env.NEXT_PUBLIC_RECEIVER_WALLET, // ✅ must be set in .env
+          to: process.env.NEXT_PUBLIC_RECEIVER_WALLET,
           value: ethers.parseEther("0.01"),
         });
 
@@ -105,7 +103,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           paymentId: payment.paymentId,
           success,
-          txHash, // ✅ include blockchain tx hash
+          txHash,
         }),
       });
 
@@ -164,13 +162,37 @@ export default function CheckoutPage() {
           {/* Header */}
           <div className="px-6 py-4 text-white bg-green-600">
             <h1 className="text-2xl font-bold">Checkout</h1>
-            <p className="opacity-90">Complete your payment to secure your bike rental</p>
+            <p className="opacity-90">
+              Complete your payment to secure your bike rental
+            </p>
           </div>
 
           <div className="grid grid-cols-1 gap-6 p-6 lg:grid-cols-3">
             {/* Reservation Details */}
-            <div className="lg:col-span-2">
-              {/* ... keep your reservation details UI ... */}
+            <div className="space-y-4 lg:col-span-2">
+              <h2 className="text-lg font-semibold text-gray-800">
+                Reservation Details
+              </h2>
+              <p>
+                <span className="font-medium">Bike:</span>{" "}
+                {reservation.bike?.name}
+              </p>
+              <p>
+                <span className="font-medium">Start:</span>{" "}
+                {new Date(reservation.start_time).toLocaleString()}
+              </p>
+              <p>
+                <span className="font-medium">End:</span>{" "}
+                {new Date(reservation.end_time).toLocaleString()}
+              </p>
+              <p>
+                <span className="font-medium">Duration:</span>{" "}
+                {reservation.duration} mins
+              </p>
+              <p>
+                <span className="font-medium">Cost:</span> $
+                {reservation.totalCost}
+              </p>
 
               {/* Payment Methods */}
               <div className="mt-6">
@@ -219,14 +241,18 @@ export default function CheckoutPage() {
                         disabled={paymentProcessing}
                         className="px-4 py-2 text-white transition bg-green-600 rounded-lg hover:bg-green-700"
                       >
-                        {paymentProcessing ? "Processing..." : "Complete Payment"}
+                        {paymentProcessing
+                          ? "Processing..."
+                          : "Complete Payment"}
                       </button>
                       <button
                         onClick={() => confirmPayment(false)}
                         disabled={paymentProcessing}
                         className="px-4 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
                       >
-                        {paymentProcessing ? "Processing..." : "Payment Failed"}
+                        {paymentProcessing
+                          ? "Processing..."
+                          : "Payment Failed"}
                       </button>
                     </div>
                   </div>
@@ -236,7 +262,23 @@ export default function CheckoutPage() {
 
             {/* Order Summary */}
             <div className="p-6 rounded-lg bg-gray-50 h-fit">
-              {/* ... keep your order summary UI ... */}
+              <h2 className="mb-4 text-lg font-semibold text-gray-800">
+                Order Summary
+              </h2>
+              <div className="space-y-2 text-gray-700">
+                <div className="flex justify-between">
+                  <span>Bike</span>
+                  <span>{reservation.bike?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Duration</span>
+                  <span>{reservation.duration} mins</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>${reservation.totalCost}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
