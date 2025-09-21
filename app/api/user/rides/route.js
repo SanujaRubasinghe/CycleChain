@@ -9,11 +9,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
   await dbConnect();
 
-  const rides = await Reservation.find({ user: session.user.id })
+  const rides = await Reservation.find({ userId: session.user.id })
     .sort({ endTime: -1 })
     .limit(10)
     .lean();
