@@ -1,5 +1,6 @@
 "use client";
 
+import { NEXT_ACTION_NOT_FOUND_HEADER } from "next/dist/client/components/app-router-headers";
 import { useEffect, useState, useMemo } from "react";
 
 const LABEL = {
@@ -125,7 +126,7 @@ export default function StorePage() {
               <div className="relative h-48 bg-gray-100 border-b border-green-200">
                 {p.image ? (
                   <img
-                    src={p.image}
+                    src={`http://localhost:3001${p.image}`}
                     alt={p.title}
                     className="w-full h-full object-cover"
                     loading="lazy"

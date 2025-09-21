@@ -16,10 +16,8 @@ export async function POST(request, { params }) {
         }
 
         const {id} = await params
-        const {qrCode} = await request.json()
 
         console.log(`Reservation id: ${id}`)
-        console.log(`QR data: ${qrCode}`)
 
         const reservation = await Reservation.findById(id)
         if (!reservation) {
@@ -36,7 +34,7 @@ export async function POST(request, { params }) {
         }
 
         const topic = `bike/B001/command`
-        const message = 'unlock'
+        const message = 'lock'
 
         client.publish(topic, message, {qos: 1}, (err) => {
         if (err) {
@@ -49,7 +47,7 @@ export async function POST(request, { params }) {
             {name: 'B001'},
             {
                 $set: {
-                    isLocked: false
+                    isLocked: true
                 }
             },
             {new: true}

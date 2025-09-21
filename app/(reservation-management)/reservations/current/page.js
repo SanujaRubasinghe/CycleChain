@@ -116,6 +116,12 @@ export default function CurrentReservationPage() {
 
       if (!res.ok) throw new Error("Invalid code");
 
+      await fetch(`/api/bikes/unlock/${reservation._id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrCode: null }),
+      });
+
       await startReservation("email");
     } catch {
       setError("Verification failed.");
@@ -189,6 +195,8 @@ export default function CurrentReservationPage() {
     try {
       await fetch(`/api/reservation/end/${reservation._id}`, { method: "POST" });
       setReservation(null);
+      await fetch(`/api/bikes/lock/${reservation._id}`, { method: "POST" });
+      sessionStorage.setItem("hasActiveReservation", "false");
       router.push(`/payment?id=${reservation._id}`);
     } catch {
       setError("Failed to end ride.");
