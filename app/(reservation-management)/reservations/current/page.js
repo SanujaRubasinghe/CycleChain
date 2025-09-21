@@ -1,30 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { BrowserQRCodeReader, BrowserCodeReader } from "@zxing/browser";
 
 export default function CurrentReservationPage() {
   const { data: session } = useSession();
+  const router = useRouter();
+
   const [reservation, setReservation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [unlockMethod, setUnlockMethod] = useState(null);
   const [verificationCode, setVerificationCode] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const [error, setError] = useState("");
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
-  const router = useRouter();
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  // Fetch reservation
+  const qrScannerRef = useRef(null);
+  const videoRef = useRef(null);
+
   useEffect(() => {
     if (!session) return;
 
     const fetchReservation = async () => {
       try {
-        const res = await axios.get("/api/reservation/current");
-        setReservation(res.data);
+        const res = await fetch("/api/reservation/current");
+        const data = await res.json();
+        if (res.ok) setReservation(data);
+        else setReservation(null);
       } catch {
         setReservation(null);
       } finally {
@@ -37,14 +43,14 @@ export default function CurrentReservationPage() {
     return () => clearInterval(interval);
   }, [session]);
 
-  // Get user location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        }),
+        (pos) =>
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          }),
         () => setLocationError("Unable to get your location.")
       );
     } else {
@@ -52,12 +58,42 @@ export default function CurrentReservationPage() {
     }
   }, []);
 
+  const startReservation = async (method) => {
+    try {
+      const res = await fetch(`/api/reservation/start/${reservation._id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method }),
+      });
+
+      if (!res.ok) throw new Error("Failed to start reservation");
+      console.log("Ride started!");
+      setUnlockMethod("started");
+    } catch {
+      setError("Failed to start ride.");
+    }
+  };
+
   const handleUnlock = async (method) => {
     setUnlockMethod(method);
+    setError("");
+
     try {
-      await axios.post(`/api/reservation/start/${reservation._id}`, { method });
       if (method === "email") {
-        await axios.post(`/api/reservation/send-code/${reservation._id}`);
+        const res = await fetch(
+          `/api/reservation/send-code/${reservation._id}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (!res.ok) throw new Error("Failed to send code");
+      }
+
+      if (method === "qr") {
+        setShowQRScanner(true);
+        startQRScanner();
       }
     } catch {
       setError("Failed to start ride.");
@@ -67,12 +103,20 @@ export default function CurrentReservationPage() {
   const handleVerify = async () => {
     setIsVerifying(true);
     setError("");
+
     try {
-      const res = await axios.post(`/api/reservation/verify-code/${reservation._id}`, {
-        code: verificationCode,
-      });
-      if (res.data.success) setUnlockMethod("verified");
-      else setError("Invalid code.");
+      const res = await fetch(
+        `/api/reservation/verify-code/${reservation._id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: verificationCode }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Invalid code");
+
+      await startReservation("email");
     } catch {
       setError("Verification failed.");
     } finally {
@@ -80,9 +124,70 @@ export default function CurrentReservationPage() {
     }
   };
 
+  const startQRScanner = async () => {
+    qrScannerRef.current = new BrowserQRCodeReader();
+
+    try {
+      const videoInputDevices =
+        await BrowserCodeReader.listVideoInputDevices();
+
+      const selectedDeviceId =
+        videoInputDevices.length > 0 ? videoInputDevices[0].deviceId : null;
+
+      if (!selectedDeviceId) throw new Error("No camera found");
+
+      await qrScannerRef.current.decodeFromVideoDevice(
+        selectedDeviceId,
+        videoRef.current,
+        async (result, err) => {
+          if (!!result) {
+            console.log("QR Scanned:", result.getText());
+            stopQRScanner();
+
+            try {
+              const res = await fetch(`/api/bikes/unlock/${reservation._id}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ qrCode: result.getText() }),
+              });
+
+              if (!res.ok) throw new Error("Failed QR unlock");
+
+              await startReservation("qr");
+            } catch {
+              setError("Failed to unlock with QR.");
+            }
+          }
+
+          if (err) {
+            console.error(err);
+          }
+        }
+      );
+    } catch (e) {
+      setError("Failed to start QR scanner.");
+      console.error(e);
+    }
+  };
+
+  const stopQRScanner = () => {
+    try {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+        setShowQRScanner(false);
+      }
+      if (qrScannerRef.current) {
+        qrScannerRef.current = null; 
+      }
+    } catch (e) {
+      console.warn("Failed to stop camera:", e);
+    }
+  };
+
   const handleEndRide = async () => {
     try {
-      await axios.post(`/api/reservation/end/${reservation._id}`);
+      await fetch(`/api/reservation/end/${reservation._id}`, { method: "POST" });
       setReservation(null);
       router.push(`/payment?id=${reservation._id}`);
     } catch {
@@ -94,16 +199,32 @@ export default function CurrentReservationPage() {
     if (!userLocation || !reservation?.start_location) return;
     const origin = `${userLocation.lat},${userLocation.lng}`;
     const destination = `${reservation.start_location.lat},${reservation.start_location.lng}`;
-    window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=walking`, "_blank");
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=walking`,
+      "_blank"
+    );
   };
 
-  if (loading) return <div className="flex h-screen items-center justify-center bg-white text-green-600">Loading reservation...</div>;
-  if (!reservation) return <div className="flex h-screen items-center justify-center bg-white text-gray-500">No active reservations.</div>;
+  if (loading)
+    return (
+      <div className="flex h-screen items-center justify-center bg-white text-green-600">
+        Loading reservation...
+      </div>
+    );
+
+  if (!reservation)
+    return (
+      <div className="flex h-screen items-center justify-center bg-white text-gray-500">
+        No active reservations.
+      </div>
+    );
 
   return (
     <div className="flex h-screen flex-col bg-white text-gray-800">
       <header className="border-b px-6 py-4 shadow-sm bg-white">
-        <h1 className="text-2xl font-bold text-green-600">Current Reservation</h1>
+        <h1 className="text-2xl font-bold text-green-600">
+          Current Reservation
+        </h1>
       </header>
 
       <main className="flex flex-1 flex-col lg:flex-row p-6 gap-6">
@@ -122,7 +243,7 @@ export default function CurrentReservationPage() {
                   {(
                     Math.sqrt(
                       Math.pow(reservation.start_location.lat - userLocation.lat, 2) +
-                      Math.pow(reservation.start_location.lng - userLocation.lng, 2)
+                        Math.pow(reservation.start_location.lng - userLocation.lng, 2)
                     ) * 111
                   ).toFixed(2)} km
                 </p>
@@ -138,12 +259,16 @@ export default function CurrentReservationPage() {
 
           <div className="rounded-lg border p-4 shadow-sm bg-white">
             <p className="text-sm text-gray-600">Ride Distance</p>
-            <p className="text-lg font-semibold">{(reservation.distance || 0).toFixed(2)} km</p>
+            <p className="text-lg font-semibold">
+              {(reservation.distance || 0).toFixed(2)} km
+            </p>
           </div>
 
           <div className="rounded-lg border p-4 shadow-sm bg-white">
             <p className="text-sm text-gray-600">Cost</p>
-            <p className="text-lg font-semibold">LKR {(reservation.cost || 0).toFixed(2)}</p>
+            <p className="text-lg font-semibold">
+              LKR {(reservation.cost || 0).toFixed(2)}
+            </p>
           </div>
 
           {locationError && (
@@ -192,8 +317,8 @@ export default function CurrentReservationPage() {
             </div>
           )}
 
-          {(unlockMethod === "qr" || unlockMethod === "verified") && (
-            <p className="text-green-600 font-semibold">Bike Unlocked!</p>
+          {unlockMethod === "started" && (
+            <p className="text-green-600 font-semibold">🚲 Bike Unlocked!</p>
           )}
 
           <button
@@ -204,6 +329,22 @@ export default function CurrentReservationPage() {
           </button>
 
           {error && <p className="text-red-600 mt-2">{error}</p>}
+
+          {showQRScanner && (
+            <div className="mt-4 p-4 bg-white shadow rounded-lg w-full max-w-md">
+              <video
+                ref={videoRef}
+                className="w-full rounded-lg"
+                style={{ width: "100%" }}
+              />
+              <button
+                onClick={stopQRScanner}
+                className="mt-3 w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </aside>
       </main>
     </div>

@@ -19,6 +19,6 @@ export async function GET(req) {
   if (!reservation) {
     return new Response(JSON.stringify({ error: "No active reservation" }), { status: 404 });
   }
-
+  
   return new Response(JSON.stringify(reservation), { status: 200 });
 }
