@@ -22,6 +22,7 @@ export default function CheckoutPage() {
     }
   }, [reservationId]);
 
+  // --------- Fetch reservation + payment ----------
   const fetchReservationDetails = async () => {
     try {
       setLoading(true);
@@ -31,12 +32,22 @@ export default function CheckoutPage() {
       const data = await res.json();
       setReservation(data);
 
-      const paymentRes = await fetch(`/api/payment/${reservationId}`);
+      const paymentRes = await fetch(`/api/payment/${reservationId}/status`);
       if (paymentRes.ok) {
         const paymentData = await paymentRes.json();
-        setPayment(paymentData[0]);
-        if (paymentData[0].method) setMethod(paymentData[0].method);
-        if (paymentData[0].status) setPaymentStatus(paymentData[0].status);
+
+        let paymentItem = null;
+        if (paymentData.payments && paymentData.payments.length > 0) {
+          paymentItem = paymentData.payments[0]; // latest payment
+        } else if (paymentData.payment) {
+          paymentItem = paymentData.payment;
+        }
+
+        if (paymentItem) {
+          setPayment(paymentItem);
+          if (paymentItem.method) setMethod(paymentItem.method);
+          if (paymentItem.status) setPaymentStatus(paymentItem.status);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -46,6 +57,7 @@ export default function CheckoutPage() {
     }
   };
 
+  // --------- Start payment ----------
   const startPayment = async (selectedMethod) => {
     setPaymentProcessing(true);
     try {
@@ -58,7 +70,7 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error("Failed to initiate payment");
 
       const data = await res.json();
-      setPayment(data);
+      setPayment(data.payment); // ✅ only the payment object
       setMethod(selectedMethod);
       setPaymentStatus("pending");
     } catch (err) {
@@ -69,6 +81,7 @@ export default function CheckoutPage() {
     }
   };
 
+  // --------- Confirm payment ----------
   const confirmPayment = async (success = true) => {
     if (!payment) return;
     setPaymentProcessing(true);
@@ -77,9 +90,7 @@ export default function CheckoutPage() {
       let txHash = null;
 
       if (method === "crypto" && success) {
-        if (!window.ethereum) {
-          throw new Error("MetaMask not installed");
-        }
+        if (!window.ethereum) throw new Error("MetaMask not installed");
 
         const provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
@@ -101,7 +112,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paymentId: payment.paymentId,
+          paymentId: payment._id, // ✅ correct field
           success,
           txHash,
         }),
@@ -110,9 +121,7 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error("Failed to confirm payment");
 
       const data = await res.json();
-      setPayment(data);
-      setPaymentStatus(data.status);
-
+      setPaymentStatus(data.status); // ✅ only update status
       if (success) {
         fetchReservationDetails();
         sessionStorage.setItem("hasActiveReservation", "false");
@@ -125,7 +134,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // ---------- UI ----------
+  // --------- UI ----------
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
