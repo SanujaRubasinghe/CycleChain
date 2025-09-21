@@ -11,6 +11,7 @@ export async function GET(req) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
+  //finding the user id reservation
   const reservation = await Reservation.findOne({
     userId: session.user.id,
     status: { $in: ["reserved", "in_progress"] },
