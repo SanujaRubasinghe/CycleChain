@@ -5,7 +5,7 @@ import { dbConnect } from "@/lib/mongodb";
 
 export async function POST(req, { params }) {
   await dbConnect();
-  const { id } = await params;
+  const { id } = params; // removed await
 
   const body = await req.json();
   const { method, amount } = body;

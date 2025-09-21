@@ -4,7 +4,7 @@ import { dbConnect } from "@/lib/mongodb";
 
 export async function GET(req, { params }) {
   await dbConnect();
-  const { id } = await params;
+  const { id } = params; //removed await
 
   try {
     const payment = await Payment.find({reservationId: id});
