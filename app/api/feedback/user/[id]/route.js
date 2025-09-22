@@ -7,7 +7,6 @@ export async function GET(request, { params }) {
     await dbConnect();
     const {id} = await params
     const feedbacks = await Feedback.find({userId: id});
-    console.log(feedbacks)
     
     if (!feedbacks) {
       return NextResponse.json(
