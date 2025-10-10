@@ -11,7 +11,7 @@ export async function POST(req, { params }) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const { reservationId } = params;
+  const { id: reservationId } = await params;
   const { paymentId, success, txHash } = await req.json();
 
   try {
@@ -22,11 +22,14 @@ export async function POST(req, { params }) {
       return NextResponse.json({ message: "Payment not found or forbidden" }, { status: 404 });
     }
 
-    payment.status = success ? "completed" : "failed";
-    if (txHash) payment.transactionId = txHash;
-    if (success) payment.completedAt = new Date();
+    // Only update if not already in final state
+    if (payment.status !== "completed" && payment.status !== "failed") {
+      payment.status = success ? "completed" : "failed";
+      if (txHash) payment.transactionId = txHash;
+      if (success && !payment.completedAt) payment.completedAt = new Date();
 
-    await payment.save();
+      await payment.save();
+    }
 
     // Update reservation status to completed-paid
     if (success) {

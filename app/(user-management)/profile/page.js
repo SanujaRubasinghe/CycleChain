@@ -80,10 +80,20 @@ export default function UserProfilePage() {
   const [err, setErr] = useState("");
   const [profile, setProfile] = useState(null);
   const [rides, setRides] = useState([]);
-  const [feedbacks, setFeedbacks] = useState([])
+  const [feedbacks, setFeedbacks] = useState([]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
+  const [cards, setCards] = useState([]);
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [cardForm, setCardForm] = useState({
+    cardholderName: "",
+    cardNumber: "",
+    expiryMonth: "",
+    expiryYear: "",
+    cvv: "",
+    isDefault: false,
+  });
 
   const load = async () => {
     try {
@@ -169,6 +179,175 @@ export default function UserProfilePage() {
 
   const logout = async () => { await signOut({ callbackUrl: "/login" }); };
 
+  const loadCards = async () => {
+    try {
+      // First, ensure cards field exists (migration)
+      console.log("Running migration...");
+      const migrationRes = await fetch("/api/user/migrate-cards", { 
+        method: "POST",
+        cache: "no-store" 
+      });
+      const migrationData = await migrationRes.json();
+      console.log("Migration result:", migrationData);
+      
+      // Then load cards
+      const res = await fetch("/api/user/cards", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Loaded cards:", data);
+        setCards(data);
+      } else {
+        console.error("Failed to load cards - status:", res.status);
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Error details:", errorData);
+        setCards([]);
+      }
+    } catch (e) {
+      console.error("Failed to load cards:", e);
+      setCards([]);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "cards") {
+      loadCards();
+    }
+  }, [activeTab]);
+
+  const handleCardFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    
+    // Validate numeric fields
+    if (name === 'expiryMonth' || name === 'expiryYear' || name === 'cvv') {
+      // Only allow digits
+      if (value && !/^\d*$/.test(value)) {
+        return;
+      }
+      
+      // Limit lengths
+      if (name === 'expiryMonth' && value.length > 2) return;
+      if (name === 'expiryYear' && value.length > 4) return;
+      if (name === 'cvv' && value.length > 4) return;
+    }
+    
+    setCardForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const formatCardNumber = (value) => {
+    const cleaned = value.replace(/\s/g, "");
+    const chunks = cleaned.match(/.{1,4}/g);
+    return chunks ? chunks.join(" ") : cleaned;
+  };
+
+  const handleCardNumberChange = (e) => {
+    const value = e.target.value.replace(/\s/g, "");
+    if (/^\d*$/.test(value) && value.length <= 16) {
+      setCardForm((prev) => ({ ...prev, cardNumber: value }));
+    }
+  };
+
+  const addCard = async (e) => {
+    e.preventDefault();
+    
+    // Client-side validation
+    if (!cardForm.cardholderName.trim()) {
+      alert("Please enter cardholder name");
+      return;
+    }
+    
+    if (cardForm.cardNumber.length < 13) {
+      alert("Card number must be at least 13 digits");
+      return;
+    }
+    
+    if (!cardForm.expiryMonth || cardForm.expiryMonth.length === 0) {
+      alert("Please enter expiry month (MM)");
+      return;
+    }
+    
+    if (!cardForm.expiryYear || cardForm.expiryYear.length !== 4) {
+      alert("Please enter expiry year (YYYY)");
+      return;
+    }
+    
+    if (!cardForm.cvv || cardForm.cvv.length < 3) {
+      alert("Please enter valid CVV (3-4 digits)");
+      return;
+    }
+    
+    try {
+      const res = await fetch("/api/user/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cardForm),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to add card");
+      }
+      
+      const result = await res.json();
+      console.log("Card added:", result);
+      
+      // Reset form
+      setShowAddCard(false);
+      setCardForm({
+        cardholderName: "",
+        cardNumber: "",
+        expiryMonth: "",
+        expiryYear: "",
+        cvv: "",
+        isDefault: false,
+      });
+      
+      // Reload cards
+      await loadCards();
+      alert("Card added successfully!");
+    } catch (e) {
+      alert(e.message || "Failed to add card");
+    }
+  };
+
+  const deleteCard = async (cardId) => {
+    if (!confirm("Are you sure you want to delete this card?")) return;
+    
+    try {
+      const res = await fetch(`/api/user/cards/${cardId}`, {
+        method: "DELETE",
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to delete card");
+      }
+      
+      alert("Card deleted successfully!");
+      loadCards();
+    } catch (e) {
+      alert(e.message || "Failed to delete card");
+    }
+  };
+
+  const setDefaultCard = async (cardId) => {
+    try {
+      const res = await fetch(`/api/user/cards/${cardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isDefault: true }),
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to set default card");
+      }
+      
+      loadCards();
+    } catch (e) {
+      alert(e.message || "Failed to set default card");
+    }
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -182,7 +361,7 @@ export default function UserProfilePage() {
   if (err) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center text-red-500 p-6 bg-red-50 rounded-xl max-w-md">
-        <div className="text-2xl mb-2">⚠️</div>
+        <div className="text-2xl mb-2">⚠️</div>
         <h2 className="text-lg font-semibold mb-2">Error Loading Profile</h2>
         <p>{err}</p>
         <button 
@@ -278,6 +457,16 @@ export default function UserProfilePage() {
                 >
                   Feedbacks
                 </button>
+                <button
+                  onClick={() => setActiveTab("cards")}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                    activeTab === "cards" 
+                      ? "bg-green-100 text-green-700 font-medium" 
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Payment Cards
+                </button>
               </div>
 
               <div className="space-y-3">
@@ -285,7 +474,7 @@ export default function UserProfilePage() {
                   onClick={logout}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg transition-colors flex items-center justify-center"
                 >
-                  <span className="mr-2">↩️</span>
+                  <span className="mr-2">↩️</span>
                   Logout
                 </button>
               </div>
@@ -504,9 +693,234 @@ export default function UserProfilePage() {
                 )}
               </div>
             )}
+          
+            {activeTab === "cards" && (
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800">Payment Cards</h2>
+                    <p className="text-sm text-gray-500 mt-1">{cards.length} card(s) saved</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={loadCards}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center"
+                      title="Refresh cards"
+                    >
+                      🔄 Refresh
+                    </button>
+                    <button
+                      onClick={() => setShowAddCard(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+                    >
+                      <span className="mr-2">+</span>
+                      Add Card
+                    </button>
+                  </div>
+                </div>
+
+                {/* Debug: Show cards state */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                    <strong>Debug:</strong> Cards in state: {JSON.stringify(cards)}
+                  </div>
+                )}
+
+                {showAddCard && (
+                  <div className="mb-6 bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800">Add New Card</h3>
+                      <button
+                        onClick={() => setShowAddCard(false)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <form onSubmit={addCard} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Cardholder Name
+                        </label>
+                        <input
+                          type="text"
+                          name="cardholderName"
+                          value={cardForm.cardholderName}
+                          onChange={handleCardFormChange}
+                          placeholder="John Doe"
+                          className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Card Number
+                        </label>
+                        <input
+                          type="text"
+                          name="cardNumber"
+                          value={formatCardNumber(cardForm.cardNumber)}
+                          onChange={handleCardNumberChange}
+                          placeholder="1234 5678 9012 3456"
+                          className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          required
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Month
+                          </label>
+                          <input
+                            type="text"
+                            name="expiryMonth"
+                            value={cardForm.expiryMonth}
+                            onChange={handleCardFormChange}
+                            placeholder="MM"
+                            maxLength="2"
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Year
+                          </label>
+                          <input
+                            type="text"
+                            name="expiryYear"
+                            value={cardForm.expiryYear}
+                            onChange={handleCardFormChange}
+                            placeholder="YYYY"
+                            maxLength="4"
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            CVV
+                          </label>
+                          <input
+                            type="password"
+                            name="cvv"
+                            value={cardForm.cvv}
+                            onChange={handleCardFormChange}
+                            placeholder="123"
+                            maxLength="4"
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="isDefault"
+                          checked={cardForm.isDefault}
+                          onChange={handleCardFormChange}
+                          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <label className="ml-2 text-sm text-gray-700">
+                          Set as default payment method
+                        </label>
+                      </div>
+
+                      <div className="flex space-x-4">
+                        <button
+                          type="submit"
+                          className="bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition-colors font-medium"
+                        >
+                          Add Card
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddCard(false)}
+                          className="border border-gray-300 text-gray-700 hover:bg-gray-50 py-3 px-6 rounded-lg transition-colors font-medium"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {cards.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">💳</div>
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">No cards saved</h3>
+                    <p className="text-gray-500">Add a payment card to make checkouts faster</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {cards.map((card) => (
+                      <div
+                        key={card._id}
+                        className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
+                        
+                        <div className="relative z-10">
+                          <div className="flex justify-between items-start mb-8">
+                            <div className="text-sm opacity-90">
+                              {card.isDefault && (
+                                <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs font-medium">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-2xl">💳</div>
+                          </div>
+
+                          <div className="mb-6">
+                            <div className="text-xl tracking-wider font-mono">
+                              {card.cardNumber}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-end">
+                            <div>
+                              <div className="text-xs opacity-75 mb-1">Cardholder</div>
+                              <div className="font-medium">{card.cardholderName}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs opacity-75 mb-1">Expires</div>
+                              <div className="font-medium">{card.expiryMonth}/{card.expiryYear}</div>
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-2 mt-4">
+                            {!card.isDefault && (
+                              <button
+                                onClick={() => setDefaultCard(card._id)}
+                                className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm transition-colors"
+                              >
+                                Set as Default
+                              </button>
+                            )}
+                            <button
+                              onClick={() => deleteCard(card._id)}
+                              className="bg-red-500 bg-opacity-80 hover:bg-opacity-100 px-4 py-2 rounded-lg text-sm transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
+

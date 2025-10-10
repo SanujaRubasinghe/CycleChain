@@ -54,17 +54,13 @@ export async function POST(req, { params }) {
           },
         ],
         mode: "payment",
-        success_url: `${origin}/checkout-success?paymentId=${payment._id}`,
-        cancel_url: `${origin}/checkout-cancel?paymentId=${payment._id}`,
+        success_url: `${origin}/payment-success?paymentId=${payment._id}&reservationId=${id}`,
+        cancel_url: `${origin}/payment?id=${id}`,
         metadata: { paymentId: payment._id.toString(), reservationId: id },
       });
 
       payment.transactionId = sessionStripe.id;
-      payment.status = "completed";
-
-      reservation.status = "completed-paid";
       await payment.save();
-      await reservation.save();
 
       return NextResponse.json({ payment, sessionId: sessionStripe.id });
     }
