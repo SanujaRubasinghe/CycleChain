@@ -17,7 +17,7 @@ export default function CheckoutSuccess() {
           credentials: "include",
         });
         const data = await res.json();
-        setPayment(data);
+        setPayment(data.payment);
 
         console.log("Payment data:", data);
 
@@ -33,26 +33,26 @@ export default function CheckoutSuccess() {
   }, [paymentId]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-lg text-center">
+    <div className="flex items-center justify-center min-h-screen py-12 bg-gray-50">
+      <div className="w-full max-w-lg p-8 text-center bg-white shadow-lg rounded-2xl">
         {loading ? (
-          <p className="text-green-700 font-medium">Loading…</p>
+          <p className="font-medium text-green-700">Loading…</p>
         ) : payment ? (
           <>
-            <h2 className="text-3xl font-bold text-green-700 mb-4">Payment Successful!</h2>
-            <p className="text-green-800 font-semibold mb-6">
+            <h2 className="mb-4 text-3xl font-bold text-green-700">Payment Successful!</h2>
+            <p className="mb-6 font-semibold text-green-800">
               Payment ID: {payment.id}
             </p>
-            <p className="text-green-700 mb-6">Total Paid: LKR {payment.total}</p>
+            <p className="mb-6 text-green-700">Total Paid: LKR {payment.total}</p>
             <button
               onClick={() => router.push("/store")}
-              className="bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-6 rounded-xl transition"
+              className="px-6 py-2 font-semibold text-white transition bg-green-700 hover:bg-green-800 rounded-xl"
             >
               Continue Shopping
             </button>
           </>
         ) : (
-          <p className="text-red-500 font-medium">Payment details not found.</p>
+          <p className="font-medium text-red-500">Payment details not found.</p>
         )}
       </div>
     </div>

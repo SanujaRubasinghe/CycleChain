@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ethers } from "ethers";
 import { loadStripe } from "@stripe/stripe-js";
+import { convertLkrToEth } from "@/lib/currencyConverter";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
@@ -18,6 +19,7 @@ export default function CheckoutPage() {
   const [method, setMethod] = useState("");
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [txHash, setTxHash] = useState("");
 
   // Fetch reservation + payment status
   useEffect(() => {
@@ -44,6 +46,9 @@ export default function CheckoutPage() {
           setPayment(latestPayment);
           setMethod(latestPayment.method);
           setPaymentStatus(latestPayment.status);
+          if (latestPayment.transactionId) {
+            setTxHash(latestPayment.transactionId);
+          }
         }
       }
     } catch (err) {
@@ -56,6 +61,7 @@ export default function CheckoutPage() {
 
   // Start payment
   const startPayment = async (selectedMethod) => {
+    setError("");
     setPaymentProcessing(true);
     try {
       const res = await fetch(`/api/payment/${reservationId}/start`, {
@@ -96,13 +102,39 @@ export default function CheckoutPage() {
       if (method === "crypto" && success) {
         if (!window.ethereum) throw new Error("MetaMask not installed");
 
+        const receiverWallet = process.env.NEXT_PUBLIC_RECEIVER_WALLET;
+        if (!receiverWallet || receiverWallet === "0x") {
+          throw new Error("Receiver wallet not configured. Please add NEXT_PUBLIC_RECEIVER_WALLET to .env.local");
+        }
+
         const provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
+        
+        // Check and switch to Sepolia if needed
+        const targetChainId = process.env.NEXT_PUBLIC_CHAIN_ID || "11155111"; // Sepolia
+        const currentChainId = await provider.send("eth_chainId", []);
+        const targetChainIdHex = "0x" + parseInt(targetChainId).toString(16);
+        
+        if (currentChainId !== targetChainIdHex) {
+          try {
+            await provider.send("wallet_switchEthereumChain", [{ chainId: targetChainIdHex }]);
+          } catch (switchError) {
+            if (switchError.code === 4902) {
+              throw new Error("Sepolia testnet not added to MetaMask. Please add it manually.");
+            }
+            throw switchError;
+          }
+        }
+
         const signer = await provider.getSigner();
 
+        // Convert LKR to ETH
+        const ethAmount = await convertLkrToEth(reservation.cost);
+        console.log(`Sending ${ethAmount} ETH for ${reservation.cost} LKR`);
+
         const tx = await signer.sendTransaction({
-          to: process.env.NEXT_PUBLIC_RECEIVER_WALLET,
-          value: ethers.parseEther("0.01"), // example amount
+          to: receiverWallet,
+          value: ethers.parseEther(ethAmount),
         });
 
         console.log("Transaction sent:", tx.hash);
@@ -110,6 +142,7 @@ export default function CheckoutPage() {
         console.log("Transaction confirmed:", tx.hash);
 
         txHash = tx.hash;
+        setTxHash(tx.hash);
       }
 
       const res = await fetch(`/api/payment/${reservationId}/confirm`, {
@@ -207,10 +240,47 @@ export default function CheckoutPage() {
                 </h2>
 
                 {paymentStatus === "completed" ? (
-                  <div className="p-4 border border-green-200 rounded-lg bg-green-50">
-                    <span className="font-medium text-green-800">
-                      Payment Completed Successfully
-                    </span>
+                  <div className="p-6 text-center border border-green-200 rounded-lg bg-green-50">
+                    <div className="mb-4">
+                      <svg
+                        className="w-16 h-16 mx-auto text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="mb-2 text-xl font-bold text-green-800">
+                      Payment Completed Successfully!
+                    </h3>
+                    <p className="mb-4 text-sm text-green-700">
+                      Your payment has been processed and confirmed.
+                    </p>
+                    {txHash && (
+                      <div className="mb-4 p-3 bg-white border border-green-300 rounded-lg">
+                        <p className="mb-1 text-xs font-medium text-gray-600">Transaction Hash:</p>
+                        <a
+                          href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline break-all"
+                        >
+                          {txHash}
+                        </a>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => window.location.href = "/"}
+                      className="px-6 py-3 text-white transition bg-green-600 rounded-lg hover:bg-green-700"
+                    >
+                      OK
+                    </button>
                   </div>
                 ) : !method ? (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -235,6 +305,50 @@ export default function CheckoutPage() {
                     >
                       <span className="font-medium">QR Code</span>
                     </button>
+                  </div>
+                ) : method === "crypto" ? (
+                  <div className="p-6 text-center border-2 border-green-300 border-dashed rounded-lg bg-green-50">
+                    <h3 className="mb-2 text-lg font-medium text-gray-800">
+                      Pay with MetaMask
+                    </h3>
+                    <p className="mb-2 text-sm text-gray-600">
+                      Amount: {reservation.cost} LKR
+                    </p>
+                    <p className="mb-4 text-xs text-gray-500">
+                      Network: Sepolia Testnet
+                    </p>
+                    {!window.ethereum && (
+                      <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          MetaMask not detected. Please install MetaMask extension.
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex justify-center space-x-3">
+                      <button
+                        onClick={() => confirmPayment(true)}
+                        disabled={paymentProcessing}
+                        className="px-6 py-3 text-white transition bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {paymentProcessing ? "Processing Transaction..." : "Pay with MetaMask"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMethod("");
+                          setPayment(null);
+                          setError("");
+                        }}
+                        disabled={paymentProcessing}
+                        className="px-4 py-3 text-gray-700 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {error && (
+                      <div className="mt-4 p-3 bg-red-100 border border-red-400 rounded-lg">
+                        <p className="text-sm text-red-800">{error}</p>
+                      </div>
+                    )}
                   </div>
                 ) : method === "qr" ? (
                   <div className="p-6 text-center border-2 border-gray-300 border-dashed rounded-lg">

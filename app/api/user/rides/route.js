@@ -13,9 +13,12 @@ export async function GET() {
 
   await dbConnect();
 
-  const rides = await Reservation.find({ userId: session.user.id })
-    .sort({ endTime: -1 })
-    .limit(10)
+  // Fetch all completed rides (both completed-payment-pending and completed-paid)
+  const rides = await Reservation.find({ 
+    userId: session.user.id,
+    status: { $in: ["completed-payment-pending", "completed-paid"] }
+  })
+    .sort({ end_time: -1 })
     .lean();
 
   return NextResponse.json(rides, { headers: { "Cache-Control": "no-store" } });
