@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import LoyaltyManagement from "@/app/(loyalty_management)/loyalty/page";
+import NFTSection from "@/components/profile/NFTSection";
 
 // Eco Impact Card
 function EcoImpactCard({ totalDistanceKm = 0 }) {

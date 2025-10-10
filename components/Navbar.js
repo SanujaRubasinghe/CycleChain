@@ -21,7 +21,8 @@ export default function Navbar() {
           <Link href="/about" className="text-gray-600 hover:text-green-600 transition">About</Link>
           <Link href="/feedback" className="text-gray-600 hover:text-green-600 transition">Feedbacks</Link>
           <Link href="/pricing" className="text-gray-600 hover:text-green-600 transition">Pricing</Link>
-          <Link href="/bike-store" className="text-gray-600 hover:text-green-600 transition">Bike Store</Link>
+          <Link href="/nft-store" className="text-gray-600 hover:text-green-600 transition">NFT Store</Link>
+          <Link href="/my-nfts" className="text-gray-600 hover:text-green-600 transition">My NFTs</Link>
           <Link href="/store" className="text-gray-600 hover:text-green-600 transition">Store</Link>
           <Link href="/contact" className="text-gray-600 hover:text-green-600 transition">Contact</Link>
         </div>
@@ -78,6 +79,8 @@ export default function Navbar() {
         <Link href="/about" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>About</Link>
         <Link href="/locations" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Locations</Link>
         <Link href="/pricing" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Pricing</Link>
+        <Link href="/nft-store" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>NFT Store</Link>
+        <Link href="/my-nfts" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>My NFTs</Link>
         <Link href="/contact" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
         
         <div className="w-px h-8 bg-gray-300 my-4"></div>
