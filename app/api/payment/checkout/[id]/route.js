@@ -7,7 +7,7 @@ export async function GET(req, { params }) {
   const { id } = await params; 
 
   try {
-    const payment = await Payment.find({reservationId: id});
+    const payment = await Payment.findById(id);
     if (payment.length === 0) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
 
     return NextResponse.json(payment);

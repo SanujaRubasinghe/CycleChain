@@ -13,7 +13,7 @@ export default function CheckoutSuccess() {
   useEffect(() => {
     const fetchPayment = async () => {
       try {
-        const res = await fetch(`/api/product-payment/${paymentId}`, {
+        const res = await fetch(`/api/payment/checkout/${paymentId}`, {
           credentials: "include",
         });
         const data = await res.json();
@@ -21,7 +21,6 @@ export default function CheckoutSuccess() {
 
         console.log("Payment data:", data);
 
-        await fetch("/api/store-cart/clear", { method: "POST", credentials: "include" });
       } catch (err) {
         console.error("Failed to fetch payment:", err.message);
       } finally {
@@ -41,14 +40,14 @@ export default function CheckoutSuccess() {
           <>
             <h2 className="text-3xl font-bold text-green-700 mb-4">Payment Successful!</h2>
             <p className="text-green-800 font-semibold mb-6">
-              Payment ID: {payment.id}
+              Payment ID: {payment._id}
             </p>
-            <p className="text-green-700 mb-6">Total Paid: LKR {payment.total}</p>
+            <p className="text-green-700 mb-6">Total Paid: LKR {payment.amount}</p>
             <button
-              onClick={() => router.push("/store")}
+              onClick={() => router.push("/")}
               className="bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-6 rounded-xl transition"
             >
-              Continue Shopping
+              Continue to Home
             </button>
           </>
         ) : (
