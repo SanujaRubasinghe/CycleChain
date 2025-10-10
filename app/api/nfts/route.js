@@ -80,13 +80,23 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
+    console.log('NFT API POST - Session:', session ? 'Available' : 'Not available');
+    
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.log('NFT API POST - No session found, returning 401');
+      return NextResponse.json({ error: "Unauthorized - Please log in" }, { status: 401 });
     }
 
     await connectDB();
+    console.log('NFT API POST - Database connected');
 
     const nftData = await request.json();
+    console.log('NFT API POST - Received data:', {
+      tokenId: nftData.tokenId,
+      ownerAddress: nftData.ownerAddress,
+      serialNumber: nftData.serialNumber,
+      purchasePrice: nftData.purchasePrice
+    });
 
     // Validate required fields
     const requiredFields = ['tokenId', 'contractAddress', 'transactionHash', 'blockNumber', 'ownerAddress', 'bikeData', 'serialNumber', 'purchasePrice'];
@@ -101,6 +111,8 @@ export async function POST(request) {
     }
 
     // Create NFT record
+    console.log('NFT API POST - Creating NFT with email:', session.user.email);
+    
     const nft = new NFT({
       ...nftData,
       ownerEmail: session.user.email,
@@ -123,7 +135,9 @@ export async function POST(request) {
       ]
     });
 
+    console.log('NFT API POST - Saving NFT to database...');
     await nft.save();
+    console.log('NFT API POST - NFT saved successfully:', nft._id);
 
     // Update user's NFT profile stats
     const user = await User.findOne({ email: session.user.email });

@@ -199,6 +199,17 @@ export default function MintButton({ contractAddress, bikeData, onMintComplete, 
       
       // Save NFT data to MongoDB
       try {
+        console.log('Attempting to save NFT to database...', {
+          tokenId: tokenId,
+          contractAddress: contractAddress,
+          transactionHash: tx.hash,
+          blockNumber: receipt.blockNumber,
+          ownerAddress: userAddress,
+          serialNumber: serialNumber,
+          purchasePrice: bikeData.price,
+          network: 'sepolia'
+        });
+
         const dbResponse = await fetch('/api/nfts', {
           method: 'POST',
           headers: {
@@ -220,10 +231,18 @@ export default function MintButton({ contractAddress, bikeData, onMintComplete, 
           })
         });
 
+        console.log('Database response status:', dbResponse.status);
+        
         if (dbResponse.ok) {
-          console.log('NFT data saved to database successfully');
+          const dbResult = await dbResponse.json();
+          console.log('NFT data saved to database successfully:', dbResult);
         } else {
-          console.error('Failed to save NFT data to database');
+          const errorData = await dbResponse.json().catch(() => ({}));
+          console.error('Failed to save NFT data to database:', {
+            status: dbResponse.status,
+            statusText: dbResponse.statusText,
+            error: errorData
+          });
         }
       } catch (dbError) {
         console.error('Error saving to database:', dbError);
