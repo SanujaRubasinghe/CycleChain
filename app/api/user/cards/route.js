@@ -6,6 +6,29 @@ import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
+// Luhn algorithm for card number validation
+function validateCardNumberLuhn(cardNumber) {
+  const cleaned = cardNumber.replace(/\s/g, "");
+  if (!/^\d+$/.test(cleaned)) return false;
+  
+  let sum = 0;
+  let isEven = false;
+  
+  for (let i = cleaned.length - 1; i >= 0; i--) {
+    let digit = parseInt(cleaned[i]);
+    
+    if (isEven) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    
+    sum += digit;
+    isEven = !isEven;
+  }
+  
+  return sum % 10 === 0;
+}
+
 // GET all cards for the logged-in user
 export async function GET() {
   try {
@@ -66,7 +89,12 @@ export async function POST(req) {
   // Basic card number validation (remove spaces and check if it's numeric)
   const cleanCardNumber = cardNumber.replace(/\s/g, "");
   if (!/^\d{13,19}$/.test(cleanCardNumber)) {
-    return NextResponse.json({ message: "Invalid card number" }, { status: 400 });
+    return NextResponse.json({ message: "Card number must be between 13 and 19 digits" }, { status: 400 });
+  }
+
+  // Validate card number using Luhn algorithm
+  if (!validateCardNumberLuhn(cleanCardNumber)) {
+    return NextResponse.json({ message: "Invalid card number (failed checksum validation)" }, { status: 400 });
   }
 
   // Validate expiry - be flexible with input format
@@ -74,7 +102,7 @@ export async function POST(req) {
   const cleanYear = String(expiryYear).trim();
   
   if (!/^\d{1,2}$/.test(expiryMonth)) {
-    return NextResponse.json({ message: "Invalid expiry month format" }, { status: 400 });
+    return NextResponse.json({ message: "Invalid expiry month format (use MM)" }, { status: 400 });
   }
   
   if (!/^\d{4}$/.test(cleanYear)) {
@@ -83,7 +111,7 @@ export async function POST(req) {
 
   const month = parseInt(cleanMonth);
   if (month < 1 || month > 12) {
-    return NextResponse.json({ message: "Invalid expiry month (must be 1-12)" }, { status: 400 });
+    return NextResponse.json({ message: "Month must be between 01 and 12" }, { status: 400 });
   }
   
   // Check if card is not expired
@@ -96,9 +124,14 @@ export async function POST(req) {
     return NextResponse.json({ message: "Card has expired" }, { status: 400 });
   }
 
-  // Validate CVV
-  if (!/^\d{3,4}$/.test(cvv)) {
-    return NextResponse.json({ message: "Invalid CVV" }, { status: 400 });
+  // Check if year is too far in the future (more than 20 years)
+  if (cardYear > currentYear + 20) {
+    return NextResponse.json({ message: "Invalid expiry year (too far in future)" }, { status: 400 });
+  }
+
+  // Validate CVV (3 digits only)
+  if (!/^\d{3}$/.test(cvv)) {
+    return NextResponse.json({ message: "CVV must be exactly 3 digits" }, { status: 400 });
   }
 
   await dbConnect();

@@ -86,6 +86,7 @@ export default function UserProfilePage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [cards, setCards] = useState([]);
   const [showAddCard, setShowAddCard] = useState(false);
+  const [editingCardId, setEditingCardId] = useState(null);
   const [cardForm, setCardForm] = useState({
     cardholderName: "",
     cardNumber: "",
@@ -214,20 +215,122 @@ export default function UserProfilePage() {
     }
   }, [activeTab]);
 
+  // Card type detection based on card number
+  const detectCardType = (cardNumber) => {
+    const cleaned = cardNumber.replace(/\s/g, "");
+    
+    // Visa: starts with 4
+    if (/^4/.test(cleaned)) {
+      return { type: "Visa", icon: "💳" };
+    }
+    
+    // Mastercard: starts with 51-55 or 2221-2720
+    if (/^5[1-5]/.test(cleaned) || /^2(22[1-9]|2[3-9][0-9]|[3-6][0-9]{2}|7[0-1][0-9]|720)/.test(cleaned)) {
+      return { type: "Mastercard", icon: "💳" };
+    }
+    
+    // American Express: starts with 34 or 37
+    if (/^3[47]/.test(cleaned)) {
+      return { type: "American Express", icon: "💳" };
+    }
+    
+    // Discover: starts with 6011, 622126-622925, 644-649, or 65
+    if (/^6011|^622[1-9]|^64[4-9]|^65/.test(cleaned)) {
+      return { type: "Discover", icon: "💳" };
+    }
+    
+    return { type: "Unknown", icon: "💳" };
+  };
+
+  // Luhn algorithm for card number validation
+  const validateCardNumberLuhn = (cardNumber) => {
+    const cleaned = cardNumber.replace(/\s/g, "");
+    if (!/^\d+$/.test(cleaned)) return false;
+    
+    let sum = 0;
+    let isEven = false;
+    
+    for (let i = cleaned.length - 1; i >= 0; i--) {
+      let digit = parseInt(cleaned[i]);
+      
+      if (isEven) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+      
+      sum += digit;
+      isEven = !isEven;
+    }
+    
+    return sum % 10 === 0;
+  };
+
+  // Validate expiry date
+  const validateExpiryDate = (month, year) => {
+    if (!month || !year) return { valid: false, message: "Month and year are required" };
+    
+    const monthNum = parseInt(month);
+    const yearNum = parseInt(year);
+    
+    // Validate month range
+    if (monthNum < 1 || monthNum > 12) {
+      return { valid: false, message: "Month must be between 01 and 12" };
+    }
+    
+    // Validate year format
+    if (year.length !== 4) {
+      return { valid: false, message: "Year must be 4 digits (YYYY)" };
+    }
+    
+    // Check if card is expired
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    if (yearNum < currentYear || (yearNum === currentYear && monthNum < currentMonth)) {
+      return { valid: false, message: "Card has expired" };
+    }
+    
+    // Check if year is too far in the future (more than 20 years)
+    if (yearNum > currentYear + 20) {
+      return { valid: false, message: "Invalid expiry year" };
+    }
+    
+    return { valid: true, message: "" };
+  };
+
   const handleCardFormChange = (e) => {
     const { name, value, type, checked } = e.target;
     
     // Validate numeric fields
-    if (name === 'expiryMonth' || name === 'expiryYear' || name === 'cvv') {
+    if (name === 'expiryMonth') {
       // Only allow digits
-      if (value && !/^\d*$/.test(value)) {
+      if (value && !/^\d*$/.test(value)) return;
+      // Limit to 2 digits
+      if (value.length > 2) return;
+      // Auto-pad single digit months
+      if (value.length === 1 && parseInt(value) > 1) {
+        setCardForm((prev) => ({ ...prev, [name]: '0' + value }));
         return;
       }
-      
-      // Limit lengths
-      if (name === 'expiryMonth' && value.length > 2) return;
-      if (name === 'expiryYear' && value.length > 4) return;
-      if (name === 'cvv' && value.length > 4) return;
+      // Validate month range as user types
+      if (value.length === 2 && (parseInt(value) < 1 || parseInt(value) > 12)) {
+        return;
+      }
+    }
+    
+    if (name === 'expiryYear') {
+      // Only allow digits
+      if (value && !/^\d*$/.test(value)) return;
+      // Limit to 4 digits
+      if (value.length > 4) return;
+    }
+    
+    if (name === 'cvv') {
+      // Only allow digits
+      if (value && !/^\d*$/.test(value)) return;
+      // Limit to 3 digits only
+      if (value.length > 3) return;
     }
     
     setCardForm((prev) => ({
@@ -244,7 +347,8 @@ export default function UserProfilePage() {
 
   const handleCardNumberChange = (e) => {
     const value = e.target.value.replace(/\s/g, "");
-    if (/^\d*$/.test(value) && value.length <= 16) {
+    // Allow only digits and limit to 19 digits (some cards can be longer than 16)
+    if (/^\d*$/.test(value) && value.length <= 19) {
       setCardForm((prev) => ({ ...prev, cardNumber: value }));
     }
   };
@@ -258,23 +362,47 @@ export default function UserProfilePage() {
       return;
     }
     
-    if (cardForm.cardNumber.length < 13) {
-      alert("Card number must be at least 13 digits");
+    // Validate card number length
+    if (cardForm.cardNumber.length < 13 || cardForm.cardNumber.length > 19) {
+      alert("Card number must be between 13 and 19 digits");
       return;
     }
     
-    if (!cardForm.expiryMonth || cardForm.expiryMonth.length === 0) {
+    // Validate card number using Luhn algorithm
+    if (!validateCardNumberLuhn(cardForm.cardNumber)) {
+      alert("Invalid card number. Please check and try again.");
+      return;
+    }
+    
+    // Detect card type
+    const cardType = detectCardType(cardForm.cardNumber);
+    if (cardType.type === "Unknown") {
+      const proceed = confirm("Card type could not be detected. Do you want to continue?");
+      if (!proceed) return;
+    }
+    
+    // Validate expiry month
+    if (!cardForm.expiryMonth || cardForm.expiryMonth.length !== 2) {
       alert("Please enter expiry month (MM)");
       return;
     }
     
+    // Validate expiry year
     if (!cardForm.expiryYear || cardForm.expiryYear.length !== 4) {
       alert("Please enter expiry year (YYYY)");
       return;
     }
     
-    if (!cardForm.cvv || cardForm.cvv.length < 3) {
-      alert("Please enter valid CVV (3-4 digits)");
+    // Validate expiry date
+    const expiryValidation = validateExpiryDate(cardForm.expiryMonth, cardForm.expiryYear);
+    if (!expiryValidation.valid) {
+      alert(expiryValidation.message);
+      return;
+    }
+    
+    // Validate CVV (3 digits only)
+    if (!cardForm.cvv || cardForm.cvv.length !== 3) {
+      alert("Please enter valid 3-digit CVV");
       return;
     }
     
@@ -346,6 +474,107 @@ export default function UserProfilePage() {
       loadCards();
     } catch (e) {
       alert(e.message || "Failed to set default card");
+    }
+  };
+
+  const startEditCard = (card) => {
+    setEditingCardId(card._id);
+    setCardForm({
+      cardholderName: card.cardholderName,
+      cardNumber: card.cardNumber.replace(/\*/g, "").replace(/\s/g, "").slice(-4), // Only last 4 digits available
+      expiryMonth: card.expiryMonth,
+      expiryYear: card.expiryYear,
+      cvv: "", // CVV needs to be re-entered for security
+      isDefault: card.isDefault,
+    });
+    setShowAddCard(true);
+  };
+
+  const updateCard = async (e) => {
+    e.preventDefault();
+    
+    // Client-side validation
+    if (!cardForm.cardholderName.trim()) {
+      alert("Please enter cardholder name");
+      return;
+    }
+    
+    // Validate card number length
+    if (cardForm.cardNumber.length < 13 || cardForm.cardNumber.length > 19) {
+      alert("Card number must be between 13 and 19 digits");
+      return;
+    }
+    
+    // Validate card number using Luhn algorithm
+    if (!validateCardNumberLuhn(cardForm.cardNumber)) {
+      alert("Invalid card number. Please check and try again.");
+      return;
+    }
+    
+    // Detect card type
+    const cardType = detectCardType(cardForm.cardNumber);
+    if (cardType.type === "Unknown") {
+      const proceed = confirm("Card type could not be detected. Do you want to continue?");
+      if (!proceed) return;
+    }
+    
+    // Validate expiry month
+    if (!cardForm.expiryMonth || cardForm.expiryMonth.length !== 2) {
+      alert("Please enter expiry month (MM)");
+      return;
+    }
+    
+    // Validate expiry year
+    if (!cardForm.expiryYear || cardForm.expiryYear.length !== 4) {
+      alert("Please enter expiry year (YYYY)");
+      return;
+    }
+    
+    // Validate expiry date
+    const expiryValidation = validateExpiryDate(cardForm.expiryMonth, cardForm.expiryYear);
+    if (!expiryValidation.valid) {
+      alert(expiryValidation.message);
+      return;
+    }
+    
+    // Validate CVV (3 digits only)
+    if (!cardForm.cvv || cardForm.cvv.length !== 3) {
+      alert("Please enter valid 3-digit CVV");
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/user/cards/${editingCardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cardForm),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to update card");
+      }
+      
+      const result = await res.json();
+      console.log("Card updated:", result);
+      
+      // Reset form
+      setShowAddCard(false);
+      setEditingCardId(null);
+      setCardForm({
+        cardholderName: "",
+        cardNumber: "",
+        expiryMonth: "",
+        expiryYear: "",
+        cvv: "",
+        isDefault: false,
+      });
+      
+      // Reload cards
+      await loadCards();
+      alert("Card updated successfully!");
+    } catch (e) {
+      alert(e.message || "Failed to update card");
     }
   };
 
@@ -710,7 +939,18 @@ export default function UserProfilePage() {
                       🔄 Refresh
                     </button>
                     <button
-                      onClick={() => setShowAddCard(true)}
+                      onClick={() => {
+                        setEditingCardId(null);
+                        setCardForm({
+                          cardholderName: "",
+                          cardNumber: "",
+                          expiryMonth: "",
+                          expiryYear: "",
+                          cvv: "",
+                          isDefault: false,
+                        });
+                        setShowAddCard(true);
+                      }}
                       className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
                     >
                       <span className="mr-2">+</span>
@@ -719,26 +959,40 @@ export default function UserProfilePage() {
                   </div>
                 </div>
 
-                {/* Debug: Show cards state */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                    <strong>Debug:</strong> Cards in state: {JSON.stringify(cards)}
-                  </div>
-                )}
-
                 {showAddCard && (
                   <div className="mb-6 bg-gray-50 rounded-2xl p-6 border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">Add New Card</h3>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {editingCardId ? "Edit Card" : "Add New Card"}
+                      </h3>
                       <button
-                        onClick={() => setShowAddCard(false)}
+                        onClick={() => {
+                          setShowAddCard(false);
+                          setEditingCardId(null);
+                          setCardForm({
+                            cardholderName: "",
+                            cardNumber: "",
+                            expiryMonth: "",
+                            expiryYear: "",
+                            cvv: "",
+                            isDefault: false,
+                          });
+                        }}
                         className="text-gray-500 hover:text-gray-700"
                       >
                         ✕
                       </button>
                     </div>
                     
-                    <form onSubmit={addCard} className="space-y-4">
+                    {editingCardId && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                          ℹ️ For security reasons, you need to re-enter the full card number and CVV.
+                        </p>
+                      </div>
+                    )}
+                    
+                    <form onSubmit={editingCardId ? updateCard : addCard} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Cardholder Name
@@ -757,16 +1011,33 @@ export default function UserProfilePage() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Card Number
+                          {cardForm.cardNumber.length >= 4 && (
+                            <span className="ml-2 text-xs font-normal text-blue-600">
+                              ({detectCardType(cardForm.cardNumber).type})
+                            </span>
+                          )}
                         </label>
-                        <input
-                          type="text"
-                          name="cardNumber"
-                          value={formatCardNumber(cardForm.cardNumber)}
-                          onChange={handleCardNumberChange}
-                          placeholder="1234 5678 9012 3456"
-                          className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          required
-                        />
+                        <div className="relative">
+                          <input
+                            type="text"
+                            name="cardNumber"
+                            value={formatCardNumber(cardForm.cardNumber)}
+                            onChange={handleCardNumberChange}
+                            placeholder="1234 5678 9012 3456"
+                            className="w-full border border-gray-300 rounded-lg p-3 pr-12 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required
+                          />
+                          {cardForm.cardNumber.length >= 4 && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-2xl">
+                              {detectCardType(cardForm.cardNumber).icon}
+                            </div>
+                          )}
+                        </div>
+                        {cardForm.cardNumber.length >= 13 && !validateCardNumberLuhn(cardForm.cardNumber) && (
+                          <p className="text-xs text-red-600 mt-1">
+                            ⚠️ Invalid card number
+                          </p>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-3 gap-4">
@@ -810,7 +1081,7 @@ export default function UserProfilePage() {
                             value={cardForm.cvv}
                             onChange={handleCardFormChange}
                             placeholder="123"
-                            maxLength="4"
+                            maxLength="3"
                             className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             required
                           />
@@ -835,11 +1106,22 @@ export default function UserProfilePage() {
                           type="submit"
                           className="bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition-colors font-medium"
                         >
-                          Add Card
+                          {editingCardId ? "Update Card" : "Add Card"}
                         </button>
                         <button
                           type="button"
-                          onClick={() => setShowAddCard(false)}
+                          onClick={() => {
+                            setShowAddCard(false);
+                            setEditingCardId(null);
+                            setCardForm({
+                              cardholderName: "",
+                              cardNumber: "",
+                              expiryMonth: "",
+                              expiryYear: "",
+                              cvv: "",
+                              isDefault: false,
+                            });
+                          }}
                           className="border border-gray-300 text-gray-700 hover:bg-gray-50 py-3 px-6 rounded-lg transition-colors font-medium"
                         >
                           Cancel
@@ -867,12 +1149,15 @@ export default function UserProfilePage() {
                         
                         <div className="relative z-10">
                           <div className="flex justify-between items-start mb-8">
-                            <div className="text-sm opacity-90">
+                            <div className="flex flex-col gap-2">
                               {card.isDefault && (
-                                <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs font-medium">
+                                <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs font-medium w-fit">
                                   Default
                                 </span>
                               )}
+                              <span className="text-xs opacity-90 font-medium">
+                                {detectCardType(card.cardNumber).type}
+                              </span>
                             </div>
                             <div className="text-2xl">💳</div>
                           </div>
@@ -903,6 +1188,12 @@ export default function UserProfilePage() {
                                 Set as Default
                               </button>
                             )}
+                            <button
+                              onClick={() => startEditCard(card)}
+                              className="bg-yellow-500 bg-opacity-80 hover:bg-opacity-100 px-4 py-2 rounded-lg text-sm transition-colors"
+                            >
+                              Edit
+                            </button>
                             <button
                               onClick={() => deleteCard(card._id)}
                               className="bg-red-500 bg-opacity-80 hover:bg-opacity-100 px-4 py-2 rounded-lg text-sm transition-colors"

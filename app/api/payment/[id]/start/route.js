@@ -16,7 +16,7 @@ export async function POST(req, { params }) {
   }
 
   const { id } = await params;
-  const { method, amount } = await req.json();
+  const { method, amount, savedCardId } = await req.json();
 
   const reservation = await Reservation.findById(id);
   if (!reservation || reservation.userId !== session.user.id) {
@@ -37,6 +37,19 @@ export async function POST(req, { params }) {
       method,
       status: "pending",
     });
+
+    // If using a saved card, skip Stripe checkout and mark as ready for confirmation
+    if (method === "card" && savedCardId) {
+      payment.transactionId = `saved_card_${savedCardId}_${Date.now()}`;
+      payment.metadata = { savedCardId };
+      await payment.save();
+      
+      return NextResponse.json({ 
+        payment, 
+        usingSavedCard: true,
+        message: "Payment ready for confirmation with saved card" 
+      });
+    }
 
     if (method === "card") {
       const origin = req.headers.get("origin"); 
