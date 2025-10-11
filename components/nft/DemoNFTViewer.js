@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import { getModelUrl } from "@/config/nft-assets";
@@ -29,42 +29,71 @@ function FallbackBike() {
   );
 }
 
-// Load GLB model from local assets
+// Load GLB model from local assets with proper error handling
 function BikeModel({ url, onLoad, onError }) {
-  const [useFallback, setUseFallback] = useState(false);
-  
-  // Try to load the GLB model
-  let scene = null;
+  const [hasError, setHasError] = useState(false);
+
+  // useGLTF hook will handle loading and errors through React error boundaries
   try {
     const gltf = useGLTF(url);
-    scene = gltf.scene;
-  } catch (error) {
-    console.error("Error loading GLB model:", error);
-    if (onError) onError(error);
-    setUseFallback(true);
-  }
-  
-  useEffect(() => {
-    if (scene) {
-      // Optimize the model for better performance
-      scene.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      
-      // Call onLoad when model is ready
-      if (onLoad) onLoad();
-    }
-  }, [scene, onLoad]);
 
-  // Use fallback if GLB failed to load
-  if (useFallback || !scene) {
+    useEffect(() => {
+      if (gltf && gltf.scene) {
+        // Optimize the model for better performance
+        gltf.scene.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        // Call onLoad when model is ready
+        if (onLoad) onLoad();
+
+        console.log("GLB model loaded successfully:", url);
+      }
+    }, [gltf, onLoad]);
+
+    if (!gltf || !gltf.scene) {
+      return <FallbackBike />;
+    }
+
+    return <primitive object={gltf.scene} scale={0.8} position={[0, -1, 0]} />;
+
+  } catch (error) {
+    // This catch block will only work for synchronous errors, not async loading errors
+    console.error("Synchronous error loading GLB model:", error);
+    if (onError && !hasError) {
+      setHasError(true);
+      onError(error);
+    }
+    return <FallbackBike />;
+  }
+}
+
+// Error boundary component for GLB loading
+function ModelErrorBoundary({ children, onError }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    // Set up global error handler for GLB loading issues
+    const handleError = (event) => {
+      if (event.error && event.error.message && event.error.message.includes('GLB')) {
+        console.error("GLB loading error caught by boundary:", event.error);
+        setHasError(true);
+        if (onError) onError(event.error);
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, [onError]);
+
+  if (hasError) {
     return <FallbackBike />;
   }
 
-  return <primitive object={scene} scale={0.8} position={[0, -1, 0]} />;
+  return children;
 }
 
 export default function DemoNFTViewer({ 
@@ -75,23 +104,53 @@ export default function DemoNFTViewer({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [modelError, setModelError] = useState(false);
+  const [modelPreloaded, setModelPreloaded] = useState(false);
 
   // Use local model URL from config
   const modelUrl = getModelUrl();
   
   console.log("Loading 3D model from:", modelUrl);
 
+  // Preload the GLB model to ensure it's ready
   useEffect(() => {
-    // Reduced loading time since we're using local assets
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const preloadModel = async () => {
+      try {
+        console.log("Preloading GLB model:", modelUrl);
+        
+        // Use fetch to preload the model file
+        const response = await fetch(modelUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch model: ${response.status}`);
+        }
+        
+        // Check if it's a valid GLB file by checking content type
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/octet-stream') && !contentType.includes('model/gltf-binary')) {
+          console.warn("Model file may not be a valid GLB:", contentType);
+        }
+        
+        const blob = await response.blob();
+        console.log("GLB model preloaded successfully, size:", blob.size, "bytes");
+        
+        setModelPreloaded(true);
+        
+        // Set loading to false after a short delay to ensure React Three Fiber is ready
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 500);
+        
+      } catch (error) {
+        console.error("Failed to preload GLB model:", error);
+        setModelError(true);
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, []);
+    preloadModel();
+  }, [modelUrl]);
 
   const handleModelLoad = () => {
-    setIsLoading(false);
+    console.log("GLB model rendered successfully in 3D scene");
   };
 
   const handleModelError = (error) => {
@@ -100,12 +159,15 @@ export default function DemoNFTViewer({
     setIsLoading(false);
   };
 
-  if (isLoading) {
+  if (isLoading || !modelPreloaded) {
     return (
       <div className="w-full h-[500px] flex items-center justify-center bg-gray-100 rounded-lg">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your NFT...</p>
+          <p className="text-sm text-gray-500 mt-2">
+            {!modelPreloaded ? "Preloading 3D model..." : "Preparing 3D scene..."}
+          </p>
         </div>
       </div>
     );
@@ -130,43 +192,47 @@ export default function DemoNFTViewer({
     <div className="w-full">
       {/* 3D Model Viewer */}
       <div className="w-full h-[500px] bg-gradient-to-b from-blue-50 to-white rounded-lg overflow-hidden shadow-lg">
-        <Canvas 
+        <Canvas
           camera={{ position: [3, 2, 5], fov: 50 }}
           shadows
         >
           {/* Lighting */}
           <ambientLight intensity={0.4} />
-          <directionalLight 
-            position={[10, 10, 5]} 
+          <directionalLight
+            position={[10, 10, 5]}
             intensity={1}
             castShadow
             shadow-mapSize-width={2048}
             shadow-mapSize-height={2048}
           />
           <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          
+
           {/* Environment */}
           <Environment preset="studio" />
-          
-          {/* 3D Model */}
-          <BikeModel 
-            url={modelUrl}
-            onLoad={handleModelLoad}
-            onError={handleModelError}
-          />
-          
+
+          {/* 3D Model with Error Boundary and Suspense */}
+          <Suspense fallback={<FallbackBike />}>
+            <ModelErrorBoundary onError={handleModelError}>
+              <BikeModel
+                url={modelUrl}
+                onLoad={handleModelLoad}
+                onError={handleModelError}
+              />
+            </ModelErrorBoundary>
+          </Suspense>
+
           {/* Ground shadow */}
-          <ContactShadows 
-            position={[0, -1.4, 0]} 
-            opacity={0.4} 
-            scale={10} 
-            blur={1.5} 
-            far={4.5} 
+          <ContactShadows
+            position={[0, -1.4, 0]}
+            opacity={0.4}
+            scale={10}
+            blur={1.5}
+            far={4.5}
           />
-          
+
           {/* Controls */}
-          <OrbitControls 
-            autoRotate 
+          <OrbitControls
+            autoRotate
             autoRotateSpeed={1}
             enablePan={false}
             maxPolarAngle={Math.PI / 2}
