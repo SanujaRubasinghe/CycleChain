@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from 'react'
-import { assets, dummyUserData, ownerMenuLinks } from '../../assets/assets'
-import { NavLink, useLocation } from 'react-router-dom';
+import { assets, dummyUserData, ownerMenuLinks } from '@/public/assets/assets'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 function Sidebar() {
 
   const user = dummyUserData;
-  const location = useLocation();
+  const pathname = usePathname();
   const [image,setImage] = useState('');
 
   const updateImage = async ()=>{

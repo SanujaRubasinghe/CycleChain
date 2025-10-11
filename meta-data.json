@@ -1,0 +1,10 @@
+{
+  "name": "Bike Ownership Token",
+  "description": "This token represents ownership of a registered bike.",
+  "image": "ipfs://QmXJqejfM6oey6Mifzw3p4bKiu1SYCo4dqPbXEGCCV1EbS",
+  "animation_url": "ipfs://QmX4VeJz8aypxG435rQAM23id5eyFpT54pvq1RTzMSMeSb",
+  "attributes": [
+    { "trait_type": "Type", "value": "Credit Card Style" },
+    { "trait_type": "Ownership", "value": "Verified" }
+  ]
+}

@@ -19,7 +19,8 @@ export async function POST(req, { params }) {
 
   reservation.status = "completed-payment-pending";
   reservation.end_time = new Date();
-  reservation.end_location = bike.currentLocation;
+  reservation.end_location = bike.currentLocation
+  reservation.distance = 20; // Example: 20 km, update with real distance calculation
 
   reservation.cost = (reservation.distance || 0) * 50;
 

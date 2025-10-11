@@ -9,32 +9,40 @@ import Product from "@/models/Product";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-  await dbConnect();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+    await dbConnect();
+  
+    let cart = await Cart.findOne({ user: session.user.id })
+      .populate("items.product")
+      .lean();
 
-  let cart = await Cart.findOne({ user: session.user.id })
-    .populate("items.product")
-    .lean();
-  if (!cart) {
-    return NextResponse.json({ items: [], total: 0 });
+    if (!cart) {
+      return NextResponse.json({ items: [], total: 0 });
+    }
+
+    return NextResponse.json({
+      id: cart._id,
+      items: cart.items.map((i) => ({
+        _id: i._id,
+        qty: i.qty,
+        priceSnapshot: i.priceSnapshot,
+        product: {
+          _id: i.product?._id,
+          title: i.product?.title,
+          category: i.product?.category,
+          image: i.product?.image,
+        },
+      })),
+      total: cart.total,
+    });
+  } catch (error) {
+    console.error(error.message)
+    return NextResponse.json({error: error.message}, {status: 500})
   }
-  return NextResponse.json({
-    items: cart.items.map((i) => ({
-      _id: i._id,
-      qty: i.qty,
-      priceSnapshot: i.priceSnapshot,
-      product: {
-        _id: i.product?._id,
-        title: i.product?.title,
-        category: i.product?.category,
-        image: i.product?.image,
-      },
-    })),
-    total: cart.total,
-  });
 }
 
 export async function POST(req) {
@@ -71,7 +79,7 @@ export async function POST(req) {
     cart.items[idx].qty += Math.max(1, Number(qty) || 1);
   }
 
-  cart.recalc();
+  await cart.recalc();
   await cart.save();
 
   return NextResponse.json({ ok: true });

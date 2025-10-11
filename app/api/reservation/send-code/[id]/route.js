@@ -8,13 +8,17 @@ export async function POST(req, { params }) {
   await dbConnect();
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+    });
   }
 
   const { id } = await params;
   const reservation = await Reservation.findById(id);
   if (!reservation) {
-    return new Response(JSON.stringify({ error: "Reservation not found" }), { status: 404 });
+    return new Response(JSON.stringify({ error: "Reservation not found" }), {
+      status: 404,
+    });
   }
 
   const code = Math.floor(1000 + Math.random() * 9000).toString();
@@ -24,8 +28,8 @@ export async function POST(req, { params }) {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.GMAIL_USER, // your Gmail address
-      pass: process.env.GMAIL_PASS, // app password 
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS,
     },
   });
 
@@ -47,5 +51,7 @@ export async function POST(req, { params }) {
 
   await transporter.sendMail(mailOptions);
 
-  return new Response(JSON.stringify({ message: "Code sent via email" }), { status: 200 });
+  return new Response(JSON.stringify({ message: "Code sent via email" }), {
+    status: 200,
+  });
 }

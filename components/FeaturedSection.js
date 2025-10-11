@@ -1,12 +1,13 @@
+'use client'
 import React from 'react'
 import Title from './Title'
-import { assets, dummyCarData } from '../assets/assets'
+import { assets, dummyCarData } from '@/public/assets/assets'
 import CarCard from './CarCard'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
 
 function FeaturedSection() {
 
-    const navigate = useNavigate();
+    const router = useRouter();
 
   return (
     <div className='flex flex-col items-center py-24 px-6 md:px-16
@@ -30,7 +31,7 @@ function FeaturedSection() {
         </div>
 
         <button onClick={()=>{
-            navigate('/cars'); scrollTo(0,0)
+            router.push('/cars'); scrollTo(0,0)
         }}
          className='flex items-center justify-center gap-2 px-6 py-2
         border border-borderColor hover:bg-gray-50 rounded-md mt-18 cursor-pointer'>
