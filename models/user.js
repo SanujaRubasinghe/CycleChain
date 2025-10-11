@@ -30,6 +30,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  loyaltyPoints: {
+    type: Number,
+    default: 0,
+  },
   cards: [
     {
       cardholderName: {

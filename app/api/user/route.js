@@ -48,6 +48,7 @@ export async function GET() {
       email: user.email,
       username: user.username,
       role: user.role,
+      loyaltyPoints: user.loyaltyPoints || 0,
       usage: summary,
     },
     { headers: { "Cache-Control": "no-store" } }

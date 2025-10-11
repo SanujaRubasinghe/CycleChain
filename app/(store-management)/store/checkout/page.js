@@ -2,14 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
+import { ethers } from "ethers";
+import { convertLkrToEth } from "@/lib/currencyConverter";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 export default function CheckoutPage() {
   const [cart, setCart] = useState({ items: [], total: 0 });
-  const [method, setMethod] = useState("card");
+  const [method, setMethod] = useState("");
   const [loading, setLoading] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState("");
+  const [error, setError] = useState("");
   const [qrUrl, setQrUrl] = useState("");
+  const [savedCards, setSavedCards] = useState([]);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [showCardSelection, setShowCardSelection] = useState(false);
 
   // Fetch cart from server
   useEffect(() => {
@@ -30,7 +38,26 @@ export default function CheckoutPage() {
     };
 
     fetchCart();
+    fetchSavedCards();
   }, []);
+
+  // Fetch saved cards
+  const fetchSavedCards = async () => {
+    try {
+      const res = await fetch("/api/user/cards");
+      if (res.ok) {
+        const cards = await res.json();
+        setSavedCards(cards);
+        // Auto-select default card if exists
+        const defaultCard = cards.find(card => card.isDefault);
+        if (defaultCard) {
+          setSelectedCard(defaultCard);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch saved cards:", err);
+    }
+  };
 
   const handleCheckout = async () => {
     if (cart.items.length === 0) return;
