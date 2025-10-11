@@ -195,7 +195,7 @@ function CheckoutPageContent() {
           throw new Error("Receiver wallet not configured. Please add NEXT_PUBLIC_RECEIVER_WALLET to .env.local");
         }
 
-        const provider = new ethers.BrowserProvider(window.ethereum);
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         
         // Check and switch to Sepolia if needed
@@ -222,7 +222,7 @@ function CheckoutPageContent() {
 
         const tx = await signer.sendTransaction({
           to: receiverWallet,
-          value: ethers.parseEther(ethAmount),
+          value: ethers.utils.parseEther(ethAmount),
         });
 
         console.log("Transaction sent:", tx.hash);
