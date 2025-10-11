@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
-import contractAbi from "@/abi/BikeOwnershipNFT.json"; 
+import contractAbi from "@/lib/web3/contractABI.json";
 
 export async function POST(request) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request) {
     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
     const contract = new ethers.Contract(
       process.env.CONTRACT_ADDRESS,
-      contractAbi.abi,
+      contractAbi,
       wallet
     );
 
