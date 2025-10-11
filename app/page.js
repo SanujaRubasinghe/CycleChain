@@ -14,31 +14,14 @@ export default function Home() {
   const [currentLocation, setCurrentLocation] = useState("");
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState(cityList);
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  const heroSlides = [
-    {
-      title: "Ride the Future",
-      subtitle: "Premium Electric Bikes",
-      description: "Experience the perfect blend of technology and sustainability with our cutting-edge e-bikes.",
-      image: assets.hero,
-      gradient: "from-blue-600 via-purple-600 to-indigo-800"
-    },
-    {
-      title: "Urban Mobility",
-      subtitle: "Redefined",
-      description: "Navigate city streets with style and efficiency. Zero emissions, maximum performance.",
-      image: assets.car_image1,
-      gradient: "from-green-600 via-teal-600 to-cyan-800"
-    },
-    {
-      title: "Adventure Awaits",
-      subtitle: "Explore Beyond",
-      description: "Take your journey further with long-range batteries and rugged design.",
-      image: assets.car_image2,
-      gradient: "from-orange-600 via-red-600 to-pink-800"
-    }
-  ];
+  // Static hero content (first slide only)
+  const heroContent = {
+    title: "Ride the Future",
+    subtitle: "Premium Electric Bikes",
+    description: "Experience the perfect blend of technology and sustainability with our cutting-edge e-bikes.",
+    image: assets.hero,
+    gradient: "from-blue-600 via-purple-600 to-indigo-800"
+  };
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -51,13 +34,6 @@ export default function Home() {
         }
       );
     }
-
-    // Auto-slide functionality
-    const slideInterval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
-
-    return () => clearInterval(slideInterval);
   }, []);
 
   const handleLocationChange = (e) => {
@@ -87,10 +63,10 @@ export default function Home() {
 
   return (
     <main className="overflow-hidden">
-      {/* Modern Hero Section with Carousel */}
+      {/* Modern Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Dynamic Background */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${heroSlides[currentSlide].gradient} transition-all duration-1000`}>
+        {/* Static Background */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${heroContent.gradient}`}>
           <div className="absolute inset-0 bg-black/20"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)]"></div>
         </div>
@@ -107,17 +83,17 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
                   <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                  {heroSlides[currentSlide].subtitle}
+                  {heroContent.subtitle}
                 </div>
                 <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
-                  {heroSlides[currentSlide].title.split(' ').map((word, index) => (
+                  {heroContent.title.split(' ').map((word, index) => (
                     <span key={index} className={index === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400" : ""}>
                       {word}{' '}
                     </span>
                   ))}
                 </h1>
                 <p className="text-xl text-gray-200 max-w-lg leading-relaxed">
-                  {heroSlides[currentSlide].description}
+                  {heroContent.description}
                 </p>
               </div>
 
@@ -173,7 +149,14 @@ export default function Home() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <button 
-                      onClick={() => router.push('/cars')}
+                      onClick={() => {
+                        const location = userLocation && userLocation.trim() !== '' ? userLocation : currentLocation;
+                        if (location && location.trim() !== '') {
+                          router.push(`/reserve?location=${encodeURIComponent(location)}`);
+                        } else {
+                          router.push('/reserve');
+                        }
+                      }}
                       className="flex items-center justify-center gap-2 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -182,7 +165,7 @@ export default function Home() {
                       Find Bikes
                     </button>
                     <button 
-                      onClick={() => router.push('/purchase')}
+                      onClick={() => router.push('/nft-store')}
                       className="flex items-center justify-center gap-2 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-300 border border-white/30"
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -215,7 +198,7 @@ export default function Home() {
             <div className="relative">
               <div className="relative z-10">
                 <Image 
-                  src={heroSlides[currentSlide].image} 
+                  src={heroContent.image} 
                   alt="E-bike" 
                   width={600} 
                   height={400}
@@ -228,19 +211,6 @@ export default function Home() {
               <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
             </div>
           </div>
-        </div>
-
-        {/* Slide Indicators */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
-          {heroSlides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                index === currentSlide ? 'bg-yellow-400 w-8' : 'bg-white/30'
-              }`}
-            />
-          ))}
         </div>
       </section>
 
@@ -271,7 +241,14 @@ export default function Home() {
 
           <div className="text-center">
             <button 
-              onClick={() => {router.push('/cars'); scrollTo(0,0)}}
+              onClick={() => {
+                const location = userLocation && userLocation.trim() !== '' ? userLocation : currentLocation;
+                if (location && location.trim() !== '') {
+                  router.push(`/(reservation-management)/reserve?location=${encodeURIComponent(location)}`);
+                } else {
+                  router.push('/(reservation-management)/reserve');
+                }
+              }}
               className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               Explore All E-Bikes
@@ -372,7 +349,14 @@ export default function Home() {
             </button>
 
             <button 
-              onClick={() => router.push('/cars')}
+              onClick={() => {
+                const location = userLocation && userLocation.trim() !== '' ? userLocation : currentLocation;
+                if (location && location.trim() !== '') {
+                  router.push(`/(reservation-management)/reserve?location=${encodeURIComponent(location)}`);
+                } else {
+                  router.push('/(reservation-management)/reserve');
+                }
+              }}
               className="flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-800 px-4 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
             >
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">

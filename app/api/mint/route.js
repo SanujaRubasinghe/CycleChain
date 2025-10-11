@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
-import contractAbi from "@/abi/BikeOwnershipNFT.json"; // ABI from Hardhat build
+import contractAbi from "@/abi/BikeOwnershipNFT.json"; 
 
 export async function POST(request) {
   try {

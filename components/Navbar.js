@@ -18,13 +18,12 @@ export default function Navbar() {
       {/* Desktop Navigation */}
       <div className="hidden md:flex items-center space-x-8">
         <div className="flex space-x-6">
+          <Link href="/" className="text-gray-600 hover:text-green-600 transition">Home</Link>
+          <Link href="/bikes" className="text-gray-600 hover:text-green-600 transition">Bikes</Link>
           <Link href="/about" className="text-gray-600 hover:text-green-600 transition">About</Link>
-          <Link href="/feedback" className="text-gray-600 hover:text-green-600 transition">Feedbacks</Link>
-          <Link href="/pricing" className="text-gray-600 hover:text-green-600 transition">Pricing</Link>
-          <Link href="/nft-store" className="text-gray-600 hover:text-green-600 transition">NFT Store</Link>
-          <Link href="/my-nfts" className="text-gray-600 hover:text-green-600 transition">My NFTs</Link>
+          <Link href="/feedback" className="text-gray-600 hover:text-green-600 transition">Feedback</Link>
           <Link href="/store" className="text-gray-600 hover:text-green-600 transition">Store</Link>
-          <Link href="/contact" className="text-gray-600 hover:text-green-600 transition">Contact</Link>
+          <Link href="/nft-store" className="text-gray-600 hover:text-green-600 transition">NFT Store</Link>
         </div>
         
         <div className="h-6 w-px bg-gray-300 mx-2"></div>
@@ -37,6 +36,9 @@ export default function Navbar() {
                 <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
                   {session.user.name || "Profile"}
                 </button>
+              </Link>
+              <Link href="/my-nfts" className="px-4 py-2 text-gray-600 hover:text-green-600 transition font-medium">
+                My NFTs
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
@@ -76,12 +78,12 @@ export default function Navbar() {
 
       {/* Mobile Navigation */}
       <div className={`md:hidden fixed top-0 left-0 w-full h-screen bg-white z-40 flex flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <Link href="/" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Home</Link>
+        <Link href="/bikes" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Bikes</Link>
         <Link href="/about" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>About</Link>
-        <Link href="/locations" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Locations</Link>
-        <Link href="/pricing" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Pricing</Link>
+        <Link href="/feedback" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Feedback</Link>
+        <Link href="/store" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Store</Link>
         <Link href="/nft-store" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>NFT Store</Link>
-        <Link href="/my-nfts" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>My NFTs</Link>
-        <Link href="/contact" className="text-xl text-gray-800 hover:text-green-600 transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
         
         <div className="w-px h-8 bg-gray-300 my-4"></div>
         
@@ -92,6 +94,9 @@ export default function Navbar() {
                 <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-lg">
                   {session.user.name || "Profile"}
                 </button>
+              </Link>
+              <Link href="/my-nfts" onClick={() => setIsMenuOpen(false)} className="px-6 py-3 text-gray-800 hover:text-green-600 transition font-medium text-lg">
+                My NFTs
               </Link>
               <button
                 onClick={() => { setIsMenuOpen(false); signOut({ callbackUrl: "/" }); }}

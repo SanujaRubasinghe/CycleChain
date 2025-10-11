@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 // Dynamically load the ClientMap with no SSR
@@ -30,11 +30,19 @@ export default function BikeRentalSystem() {
   const [mapKey, setMapKey] = useState(0); // Key to force map re-render
   
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchBikes();
     getUserLocation();
-  }, []);
+
+    // Check for location parameter in URL
+    const locationParam = searchParams.get('location');
+    if (locationParam) {
+      setSearchLocation(locationParam);
+      geocodeLocation(locationParam);
+    }
+  }, [searchParams]);
 
   const fetchBikes = async () => {
     try {
@@ -83,6 +91,30 @@ export default function BikeRentalSystem() {
       const data = await response.json();
       if (data.length > 0) {
         setMapCenter([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+        setMapKey(prev => prev + 1); // Force map re-render
+        setError('');
+      } else {
+        setError('Location not found. Try a different term.');
+      }
+    } catch {
+      setError('Error searching location. Try again.');
+    }
+  };
+
+  const geocodeLocation = async (locationString) => {
+    if (!locationString || locationString.trim() === '') return;
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          locationString
+        )}`
+      );
+      if (!response.ok) throw new Error('Location search failed');
+      const data = await response.json();
+      if (data.length > 0) {
+        const newCenter = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        setMapCenter(newCenter);
         setMapKey(prev => prev + 1); // Force map re-render
         setError('');
       } else {
