@@ -190,10 +190,12 @@ export default function MyNFTsPage() {
                 <div key={nft.tokenId} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
                   <div className="h-64">
                     <DemoNFTViewer 
+                      key={`nft-preview-${nft.tokenId}`}
                       bikeModel={nft.bikeData.name}
                       serialNumber={nft.serialNumber}
                       ownerAddress={nft.ownerAddress}
                       showMetadata={false}
+                      previewMode={true}
                     />
                   </div>
                   

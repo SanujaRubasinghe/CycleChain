@@ -1,8 +1,13 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
+import { useState, useEffect, Suspense, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import { getModelUrl } from "@/config/nft-assets";
+
+// Global model cache to avoid loading the same model multiple times
+let globalModelCache = null;
+let globalModelLoading = false;
+let globalModelCallbacks = [];
 
 // Fallback 3D bike representation
 function FallbackBike() {
@@ -29,46 +34,127 @@ function FallbackBike() {
   );
 }
 
-// Load GLB model from local assets with proper error handling
-function BikeModel({ url, onLoad, onError }) {
-  const [hasError, setHasError] = useState(false);
+// Global model loader to share GLB between multiple components
+function loadGlobalModel() {
+  return new Promise((resolve, reject) => {
+    if (globalModelCache) {
+      resolve(globalModelCache);
+      return;
+    }
 
-  // useGLTF hook will handle loading and errors through React error boundaries
-  try {
-    const gltf = useGLTF(url);
+    if (globalModelLoading) {
+      globalModelCallbacks.push({ resolve, reject });
+      return;
+    }
 
-    useEffect(() => {
+    globalModelLoading = true;
+    const modelUrl = getModelUrl();
+
+    try {
+      // Use useGLTF to load the model (this will be called from a component context)
+      const gltfLoader = () => {
+        try {
+          const gltf = useGLTF(modelUrl);
+          if (gltf && gltf.scene) {
+            globalModelCache = gltf.scene.clone();
+            globalModelLoading = false;
+
+            // Resolve all waiting callbacks
+            globalModelCallbacks.forEach(callback => callback.resolve(globalModelCache));
+            globalModelCallbacks = [];
+
+            return globalModelCache;
+          }
+        } catch (error) {
+          globalModelLoading = false;
+          globalModelCallbacks.forEach(callback => callback.reject(error));
+          globalModelCallbacks = [];
+          throw error;
+        }
+      };
+
+      // This is a bit of a hack - we need to use the hook in a component context
+      // For now, let's use a simpler approach with direct fetch
+      fetch(modelUrl)
+        .then(response => {
+          if (!response.ok) throw new Error(`Failed to load model: ${response.status}`);
+          return response.blob();
+        })
+        .then(() => {
+          // For now, just resolve with null - the actual loading will happen in the component
+          resolve(null);
+        })
+        .catch(reject);
+
+    } catch (error) {
+      globalModelLoading = false;
+      reject(error);
+    }
+  });
+}
+
+// Spinning bike model component with gradient background
+function SpinningBikeModel({ previewMode = false }) {
+  const meshRef = useRef();
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const [modelError, setModelError] = useState(false);
+
+  // Slow rotation animation
+  useFrame((state, delta) => {
+    if (meshRef.current && (previewMode || modelLoaded)) {
+      meshRef.current.rotation.y += delta * 0.5; // Slow rotation
+    }
+  });
+
+  useEffect(() => {
+    // Try to load the model
+    const modelUrl = getModelUrl();
+
+    try {
+      const gltf = useGLTF(modelUrl);
       if (gltf && gltf.scene) {
-        // Optimize the model for better performance
-        gltf.scene.traverse((child) => {
+        // Clone the scene to avoid sharing instances
+        const clonedScene = gltf.scene.clone();
+
+        // Optimize the model
+        clonedScene.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
+            // Ensure materials are properly configured
+            if (child.material) {
+              child.material.needsUpdate = true;
+            }
           }
         });
 
-        // Call onLoad when model is ready
-        if (onLoad) onLoad();
+        if (meshRef.current) {
+          // Clear existing children
+          while (meshRef.current.children.length > 0) {
+            meshRef.current.remove(meshRef.current.children[0]);
+          }
+          // Add the cloned model
+          meshRef.current.add(clonedScene);
+        }
 
-        console.log("GLB model loaded successfully:", url);
+        setModelLoaded(true);
       }
-    }, [gltf, onLoad]);
-
-    if (!gltf || !gltf.scene) {
-      return <FallbackBike />;
+    } catch (error) {
+      console.error("Error loading GLB model:", error);
+      setModelError(true);
     }
+  }, []);
 
-    return <primitive object={gltf.scene} scale={0.8} position={[0, -1, 0]} />;
-
-  } catch (error) {
-    // This catch block will only work for synchronous errors, not async loading errors
-    console.error("Synchronous error loading GLB model:", error);
-    if (onError && !hasError) {
-      setHasError(true);
-      onError(error);
-    }
+  if (modelError) {
     return <FallbackBike />;
   }
+
+  return (
+    <group ref={meshRef} position={[0, -3, 0]} scale={1.5}>
+      {/* Placeholder until model loads */}
+      {!modelLoaded && <FallbackBike />}
+    </group>
+  );
 }
 
 // Error boundary component for GLB loading
@@ -100,141 +186,178 @@ export default function DemoNFTViewer({
   bikeModel = "CycleChain Pro", 
   serialNumber = "CC-2024-001",
   ownerAddress = "0x1234...5678",
-  showMetadata = true 
+  showMetadata = true,
+  previewMode = false
 }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [modelError, setModelError] = useState(false);
-  const [modelPreloaded, setModelPreloaded] = useState(false);
-
-  // Use local model URL from config
-  const modelUrl = getModelUrl();
-  
-  console.log("Loading 3D model from:", modelUrl);
-
-  // Preload the GLB model to ensure it's ready
-  useEffect(() => {
-    const preloadModel = async () => {
-      try {
-        console.log("Preloading GLB model:", modelUrl);
-        
-        // Use fetch to preload the model file
-        const response = await fetch(modelUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch model: ${response.status}`);
-        }
-        
-        // Check if it's a valid GLB file by checking content type
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/octet-stream') && !contentType.includes('model/gltf-binary')) {
-          console.warn("Model file may not be a valid GLB:", contentType);
-        }
-        
-        const blob = await response.blob();
-        console.log("GLB model preloaded successfully, size:", blob.size, "bytes");
-        
-        setModelPreloaded(true);
-        
-        // Set loading to false after a short delay to ensure React Three Fiber is ready
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 500);
-        
-      } catch (error) {
-        console.error("Failed to preload GLB model:", error);
-        setModelError(true);
-        setIsLoading(false);
-      }
-    };
-
-    preloadModel();
-  }, [modelUrl]);
-
-  const handleModelLoad = () => {
-    console.log("GLB model rendered successfully in 3D scene");
-  };
-
-  const handleModelError = (error) => {
-    console.error("Model loading error:", error);
-    setModelError(true);
-    setIsLoading(false);
-  };
-
-  if (isLoading || !modelPreloaded) {
+  // In preview mode, we don't need the complex preloading logic
+  // The SpinningBikeModel handles everything internally
+  if (previewMode) {
     return (
-      <div className="w-full h-[500px] flex items-center justify-center bg-gray-100 rounded-lg">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your NFT...</p>
-          <p className="text-sm text-gray-500 mt-2">
-            {!modelPreloaded ? "Preloading 3D model..." : "Preparing 3D scene..."}
-          </p>
+      <div className="w-full">
+        {/* 3D Model Viewer */}
+        <div className="w-full h-64 bg-gradient-to-br from-white to-blue-100 rounded-lg overflow-hidden shadow-lg relative">
+          {/* Gradient overlay for better visual appeal */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10 pointer-events-none z-10" />
+          
+          <Canvas
+            camera={{ position: [3, 2, 5], fov: 50 }}
+            shadows
+            gl={{ antialias: false, alpha: true }}
+            dpr={1}
+          >
+            {/* Enhanced Lighting Setup */}
+            <ambientLight intensity={0.6} />
+            <directionalLight
+              position={[10, 10, 5]}
+              intensity={1.2}
+              castShadow
+              shadow-mapSize-width={1024}
+              shadow-mapSize-height={1024}
+              shadow-camera-far={50}
+              shadow-camera-left={-10}
+              shadow-camera-right={10}
+              shadow-camera-top={10}
+              shadow-camera-bottom={-10}
+            />
+            <directionalLight
+              position={[-10, -10, -10]}
+              intensity={0.5}
+              color="#4A90E2"
+            />
+            <pointLight position={[0, 10, 0]} intensity={0.8} color="#FF6B6B" />
+
+            {/* Environment for better reflections */}
+            <Environment preset="studio" />
+
+            {/* Spinning Bike Model */}
+            <Suspense fallback={<FallbackBike />}>
+              <ModelErrorBoundary>
+                <SpinningBikeModel previewMode={true} />
+              </ModelErrorBoundary>
+            </Suspense>
+
+            {/* Enhanced ground shadow */}
+            <ContactShadows
+              position={[0, -1.4, 0]}
+              opacity={0.6}
+              scale={12}
+              blur={2}
+              far={6}
+            />
+          </Canvas>
         </div>
-      </div>
-    );
-  }
 
-  if (modelError) {
-    return (
-      <div className="w-full h-[500px] flex items-center justify-center bg-gradient-to-b from-blue-50 to-white rounded-lg">
-        <div className="text-center">
-          <div className="w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-600 rounded-lg mx-auto flex items-center justify-center mb-4 shadow-lg">
-            <span className="text-white font-bold text-4xl">🚲</span>
+        {/* NFT Metadata */}
+        {showMetadata && (
+          <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-xl font-bold mb-4 text-gray-800">🏆 Ownership Certificate</h3>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm text-gray-500">Bike Model</span>
+                  <p className="font-semibold">{bikeModel}</p>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-500">Serial Number</span>
+                  <p className="font-mono text-sm bg-gray-100 p-2 rounded">{serialNumber}</p>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-500">Owner Address</span>
+                  <p className="font-mono text-sm bg-gray-100 p-2 rounded">{ownerAddress}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm text-gray-500">Mint Date</span>
+                  <p className="font-semibold">{new Date().toLocaleDateString()}</p>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-500">Blockchain</span>
+                  <p className="font-semibold">Ethereum</p>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-500">Token Standard</span>
+                  <p className="font-semibold">ERC-721</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+              <p className="text-green-800 text-sm">
+                ✅ This NFT proves your ownership of the e-bike and can be used for warranty claims, 
+                resale verification, and accessing exclusive CycleChain services.
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">{bikeModel}</h3>
-          <p className="text-gray-600 text-sm mb-2">3D Model Preview</p>
-          <p className="text-gray-500 text-xs">Model loading temporarily unavailable</p>
-        </div>
+        )}
       </div>
     );
   }
 
+  // Full mode with all features (legacy behavior) - now simplified
   return (
     <div className="w-full">
       {/* 3D Model Viewer */}
-      <div className="w-full h-[500px] bg-gradient-to-b from-blue-50 to-white rounded-lg overflow-hidden shadow-lg">
+      <div className="w-full h-[500px] bg-gradient-to-br from-white to-blue-100 rounded-lg overflow-hidden shadow-lg relative">
+        {/* Gradient overlay for better visual appeal */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10 pointer-events-none z-10" />
+        
         <Canvas
           camera={{ position: [3, 2, 5], fov: 50 }}
           shadows
+          gl={{ antialias: true, alpha: true }}
+          dpr={[1, 2]}
         >
-          {/* Lighting */}
-          <ambientLight intensity={0.4} />
+          {/* Enhanced Lighting Setup */}
+          <ambientLight intensity={0.6} />
           <directionalLight
             position={[10, 10, 5]}
-            intensity={1}
+            intensity={1.2}
             castShadow
             shadow-mapSize-width={2048}
             shadow-mapSize-height={2048}
+            shadow-camera-far={50}
+            shadow-camera-left={-10}
+            shadow-camera-right={10}
+            shadow-camera-top={10}
+            shadow-camera-bottom={-10}
           />
-          <pointLight position={[-10, -10, -10]} intensity={0.3} />
+          <directionalLight
+            position={[-10, -10, -10]}
+            intensity={0.5}
+            color="#4A90E2"
+          />
+          <pointLight position={[0, 10, 0]} intensity={0.8} color="#FF6B6B" />
 
-          {/* Environment */}
+          {/* Environment for better reflections */}
           <Environment preset="studio" />
 
-          {/* 3D Model with Error Boundary and Suspense */}
+          {/* Spinning Bike Model */}
           <Suspense fallback={<FallbackBike />}>
-            <ModelErrorBoundary onError={handleModelError}>
-              <BikeModel
-                url={modelUrl}
-                onLoad={handleModelLoad}
-                onError={handleModelError}
-              />
+            <ModelErrorBoundary>
+              <SpinningBikeModel previewMode={false} />
             </ModelErrorBoundary>
           </Suspense>
 
-          {/* Ground shadow */}
+          {/* Enhanced ground shadow */}
           <ContactShadows
             position={[0, -1.4, 0]}
-            opacity={0.4}
-            scale={10}
-            blur={1.5}
-            far={4.5}
+            opacity={0.6}
+            scale={12}
+            blur={2}
+            far={6}
           />
 
-          {/* Controls */}
+          {/* OrbitControls for full mode */}
           <OrbitControls
-            autoRotate
-            autoRotateSpeed={1}
-            enablePan={false}
+            autoRotate={false}
+            enablePan={true}
             maxPolarAngle={Math.PI / 2}
             minDistance={2}
             maxDistance={8}
