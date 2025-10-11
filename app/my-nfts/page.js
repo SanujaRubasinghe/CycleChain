@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DemoNFTViewer from "@/components/nft/DemoNFTViewer";
+import { PriceDisplay, formatUSD } from "@/utils/currency";
 
 export default function MyNFTsPage() {
   const { data: session } = useSession();
@@ -58,13 +59,6 @@ export default function MyNFTsPage() {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   if (!isLoggedIn || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -104,7 +98,7 @@ export default function MyNFTsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Total Value</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalValue)}</p>
+                  <PriceDisplay usdAmount={stats.totalValue} className="text-left" showEth={false} />
                 </div>
                 <div className="text-3xl">💰</div>
               </div>
@@ -113,7 +107,7 @@ export default function MyNFTsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Average Price</p>
-                  <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.averagePrice)}</p>
+                  <PriceDisplay usdAmount={stats.averagePrice} className="text-left" showEth={false} />
                 </div>
                 <div className="text-3xl">📊</div>
               </div>
@@ -208,7 +202,7 @@ export default function MyNFTsPage() {
                     <p className="text-gray-600 mb-4">#{nft.tokenId} • {nft.serialNumber}</p>
                     
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-2xl font-bold text-green-600">{formatCurrency(nft.purchasePrice)}</span>
+                      <PriceDisplay usdAmount={nft.purchasePrice} className="text-left" showEth={false} />
                       <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                         Owned
                       </span>

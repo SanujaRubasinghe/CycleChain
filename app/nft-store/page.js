@@ -5,6 +5,8 @@ import Link from "next/link";
 import DemoNFTViewer from "@/components/nft/DemoNFTViewer";
 import MintButton from "@/components/nft/MintButton";
 import WalletConnect from "@/components/WalletConnect";
+import { PriceDisplay, formatUSD } from "@/utils/currency";
+import { assets, cityList, dummyCarData } from "@/public/assets/assets";
 
 const BIKE_COLLECTION = [
   {
@@ -12,7 +14,7 @@ const BIKE_COLLECTION = [
     name: "CycleChain Pro",
     model: "Pro",
     price: 2500,
-    image: "/bikes/pro.jpg",
+    image: "/assets/1.png",
     description: "Premium electric bike with advanced features and long-range battery",
     specs: {
       range: "80 miles",
@@ -37,7 +39,7 @@ const BIKE_COLLECTION = [
     name: "CycleChain Urban",
     model: "Urban",
     price: 1800,
-    image: "/bikes/urban.jpg",
+    image: "/assets/2.png",
     description: "Perfect for city commuting with sleek design and reliable performance",
     specs: {
       range: "60 miles",
@@ -62,7 +64,7 @@ const BIKE_COLLECTION = [
     name: "CycleChain Sport",
     model: "Sport",
     price: 3200,
-    image: "/bikes/sport.jpg",
+    image: "/assets/3.png",
     description: "High-performance e-bike for enthusiasts and long-distance riders",
     specs: {
       range: "100 miles",
@@ -87,7 +89,7 @@ const BIKE_COLLECTION = [
     name: "CycleChain Eco",
     model: "Eco",
     price: 1200,
-    image: "/bikes/eco.jpg",
+    image: "/assets/4.png",
     description: "Affordable and eco-friendly option for everyday transportation",
     specs: {
       range: "45 miles",
@@ -141,18 +143,40 @@ export default function NFTStorePage() {
 
   const BikeCard = ({ bike }) => (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-      <div className="h-64 bg-gray-200 flex items-center justify-center">
-        <span className="text-gray-500 text-2xl">🚲</span>
-        <div className="ml-2">
-          <div className="font-bold">{bike.name}</div>
-          <div className="text-sm text-gray-600">NFT Included</div>
+      <div className="h-64 bg-gray-200 relative overflow-hidden">
+        <img
+          src={bike.image}
+          alt={bike.name}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to placeholder if image fails to load
+            e.target.style.display = 'none';
+            e.target.nextElementSibling.style.display = 'flex';
+          }}
+        />
+        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
+          <div className="text-white text-center">
+            <span className="text-2xl">🚲</span>
+            <div className="font-bold">{bike.name}</div>
+            <div className="text-sm">NFT Included</div>
+          </div>
+        </div>
+        {/* Fallback content if image fails to load */}
+        <div className="absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}>
+          <div className="text-center">
+            <span className="text-gray-500 text-2xl">🚲</span>
+            <div className="ml-2">
+              <div className="font-bold text-gray-700">{bike.name}</div>
+              <div className="text-sm text-gray-600">NFT Included</div>
+            </div>
+          </div>
         </div>
       </div>
       
       <div className="p-6">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-bold text-gray-900">{bike.name}</h3>
-          <span className="text-2xl font-bold text-green-600">${bike.price.toLocaleString()}</span>
+          <PriceDisplay usdAmount={bike.price} className="text-right" />
         </div>
         
         <p className="text-gray-600 mb-4">{bike.description}</p>
@@ -302,8 +326,21 @@ export default function NFTStorePage() {
 
               <div className="grid lg:grid-cols-2 gap-6">
                 <div>
-                  <div className="h-64 bg-gray-200 rounded-lg flex items-center justify-center mb-6">
-                    <span className="text-gray-500 text-3xl">🚲 {selectedBike.name}</span>
+                  <div className="h-64 bg-gray-200 rounded-lg relative overflow-hidden mb-6">
+                    <img
+                      src={selectedBike.image}
+                      alt={selectedBike.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                    {/* Fallback content if image fails to load */}
+                    <div className="absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}>
+                      <span className="text-gray-500 text-3xl">🚲 {selectedBike.name}</span>
+                    </div>
                   </div>
                   
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -338,9 +375,7 @@ export default function NFTStorePage() {
 
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-3xl font-bold text-green-600">
-                        ${selectedBike.price.toLocaleString()}
-                      </span>
+                      <PriceDisplay usdAmount={selectedBike.price} className="text-left" />
                       <button
                         onClick={() => handlePurchase(selectedBike)}
                         className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 text-lg font-semibold"
@@ -376,7 +411,9 @@ export default function NFTStorePage() {
                   <div className="bg-gray-100 p-4 rounded-lg mb-6">
                     <h3 className="text-lg font-bold">{selectedBike.name}</h3>
                     <p className="text-gray-600">{selectedBike.description}</p>
-                    <p className="text-2xl font-bold text-green-600 mt-2">${selectedBike.price.toLocaleString()}</p>
+                    <div className="mt-2">
+                      <PriceDisplay usdAmount={selectedBike.price} />
+                    </div>
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
