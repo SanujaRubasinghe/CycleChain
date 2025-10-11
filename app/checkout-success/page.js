@@ -1,9 +1,9 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 
-export default function CheckoutSuccess() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const paymentId = searchParams.get("paymentId");
@@ -13,7 +13,7 @@ export default function CheckoutSuccess() {
   useEffect(() => {
     const fetchPayment = async () => {
       try {
-        const res = await fetch(`/api/product-payment/${paymentId}`, {
+        const res = await fetch(`/api/payment/checkout/${paymentId}`, {
           credentials: "include",
         });
         const data = await res.json();
@@ -21,7 +21,6 @@ export default function CheckoutSuccess() {
 
         console.log("Payment data:", data);
 
-        await fetch("/api/store-cart/clear", { method: "POST", credentials: "include" });
       } catch (err) {
         console.error("Failed to fetch payment:", err.message);
       } finally {
@@ -48,7 +47,7 @@ export default function CheckoutSuccess() {
               onClick={() => router.push("/store")}
               className="px-6 py-2 font-semibold text-white transition bg-green-700 hover:bg-green-800 rounded-xl"
             >
-              Continue Shopping
+              Continue to Home
             </button>
           </>
         ) : (
@@ -56,5 +55,19 @@ export default function CheckoutSuccess() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccess() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12">
+        <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-lg text-center">
+          <p className="text-green-700 font-medium">Loading payment details...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }

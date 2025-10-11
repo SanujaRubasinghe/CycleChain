@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
+import LoyaltyManagement from "@/app/(loyalty_management)/loyalty/page";
+import NFTSection from "@/components/profile/NFTSection";
 
 // Eco Impact Card
 function EcoImpactCard({ totalDistanceKm = 0 }) {
@@ -656,6 +659,7 @@ export default function UserProfilePage() {
                 >
                   Ride History
                 </button>
+
                 <button
                   onClick={() => setActiveTab("loyalty")}
                   className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
@@ -666,6 +670,7 @@ export default function UserProfilePage() {
                 >
                   Loyalty Points
                 </button>
+
                 <button
                   onClick={() => setActiveTab("stats")}
                   className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
@@ -845,6 +850,8 @@ export default function UserProfilePage() {
                 )}
               </div>
             )}
+
+            {activeTab === "loyalty" && (<LoyaltyManagement />)}
 
             {activeTab === "stats" && (
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">

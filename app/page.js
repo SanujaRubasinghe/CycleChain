@@ -1,201 +1,384 @@
 "use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { assets, cityList, dummyCarData } from "@/public/assets/assets";
+import CarCard from "@/components/CarCard";
+import Testimonial from "@/components/Testimonial";
+import Newsletter from "@/components/Newsletter";
+import Footer from "@/components/Footer";
 
-import Link from "next/link";
-import { useEffect, useRef } from "react";
-
-export default function LandingPage() {
-  const canvasRef = useRef(null);
+export default function Home() {
+  const router = useRouter();
+  const [userLocation, setUserLocation] = useState("");
+  const [currentLocation, setCurrentLocation] = useState("");
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [filteredLocations, setFilteredLocations] = useState(cityList);
+  // Static hero content (first slide only)
+  const heroContent = {
+    title: "Ride the Future",
+    subtitle: "Premium Electric Bikes",
+    description: "Experience the perfect blend of technology and sustainability with our cutting-edge e-bikes.",
+    image: assets.hero,
+    gradient: "from-blue-600 via-purple-600 to-indigo-800"
+  };
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    let animationFrameId;
-    
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    
-    const particles = [];
-    const particleCount = 50;
-    
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 3 + 1;
-        this.speedX = Math.random() * 1 - 0.5;
-        this.speedY = Math.random() * 1 - 0.5;
-        this.color = `rgba(34, 197, 94, ${Math.random() * 0.4 + 0.1})`;
-      }
-      
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        
-        if (this.x > canvas.width || this.x < 0) {
-          this.speedX = -this.speedX;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation("Near You");
+        },
+        (error) => {
+          console.log("Location access denied or unavailable");
         }
-        if (this.y > canvas.height || this.y < 0) {
-          this.speedY = -this.speedY;
-        }
-      }
-      
-      draw() {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      );
     }
-    
-    const init = () => {
-      for (let i = 0; i < particleCount; i++) {
-        particles.push(new Particle());
-      }
-    };
-    
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      for (let i = 0; i < particles.length; i++) {
-        particles[i].update();
-        particles[i].draw();
-        
-        // Connect particles with lines
-        for (let j = i; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          
-          if (distance < 100) {
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(34, 197, 94, ${0.1 * (1 - distance/100)})`;
-            ctx.lineWidth = 0.5;
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-      
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    
-    init();
-    animate();
-    
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', resizeCanvas);
-    };
   }, []);
 
-  return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-800 overflow-hidden relative">
-      {/* Animated Background */}
-      <canvas 
-        ref={canvasRef} 
-        className="absolute top-0 left-0 w-full h-full opacity-30 z-0"
-      />
+  const handleLocationChange = (e) => {
+    const value = e.target.value;
+    setUserLocation(value);
+    
+    if (value.length > 1) {
+      setShowLocationSuggestions(true);
+      const filtered = cityList.filter(city => 
+        city.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredLocations(filtered);
+    } else {
+      setShowLocationSuggestions(false);
+    }
+  };
 
-      {/* Hero Section */}
-      <main className="flex flex-col items-center justify-center flex-1 text-center pt-20 px-6 z-10 relative">
-        <h1 className="text-5xl md:text-6xl font-bold mb-6">
-          Sustainable Urban <span className="text-green-600">Mobility</span>
-        </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mb-8">
-          Rent eco-friendly electric and traditional bikes for your daily commute. 
-          Affordable, convenient, and good for the planet.
-        </p>
-        <Link href="/reserve">
-          <button className="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-            Reserve Your Bike
-          </button>
-        </Link>
-      </main>
+  const selectLocation = (location) => {
+    setUserLocation(location);
+    setShowLocationSuggestions(false);
+  };
+
+  const handleUseCurrentLocation = () => {
+    setUserLocation(currentLocation);
+    setShowLocationSuggestions(false);
+  };
+
+  return (
+    <main className="overflow-hidden">
+      {/* Modern Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Static Background */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${heroContent.gradient}`}>
+          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)]"></div>
+        </div>
+
+        {/* Animated Background Elements */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/3 rounded-full blur-3xl animate-spin-slow"></div>
+
+        <div className="relative z-10 container mx-auto px-6 lg:px-8 py-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="text-white space-y-8">
+              <div className="space-y-4">
+                <div className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                  {heroContent.subtitle}
+                </div>
+                <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
+                  {heroContent.title.split(' ').map((word, index) => (
+                    <span key={index} className={index === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400" : ""}>
+                      {word}{' '}
+                    </span>
+                  ))}
+                </h1>
+                <p className="text-xl text-gray-200 max-w-lg leading-relaxed">
+                  {heroContent.description}
+                </p>
+              </div>
+
+              {/* Search Card */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    Find E-Bikes Near You
+                  </h3>
+                  
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={userLocation}
+                      onChange={handleLocationChange}
+                      placeholder="Enter your location..."
+                      className="w-full bg-white/20 backdrop-blur-sm text-white placeholder-gray-300 px-4 py-3 pl-10 rounded-xl border border-white/30 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400/50 transition-all"
+                    />
+                    <svg className="w-5 h-5 text-gray-300 absolute left-3 top-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    
+                    {currentLocation && (
+                      <button 
+                        onClick={handleUseCurrentLocation}
+                        className="absolute right-3 top-2.5 text-xs bg-white/20 text-gray-200 hover:text-white px-2 py-1 rounded-lg transition-colors"
+                      >
+                        Use Current
+                      </button>
+                    )}
+
+                    {/* Location suggestions */}
+                    {showLocationSuggestions && filteredLocations.length > 0 && (
+                      <div className="absolute z-20 w-full mt-1 bg-white/95 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg overflow-hidden">
+                        {filteredLocations.map((location) => (
+                          <div
+                            key={location}
+                            onClick={() => selectLocation(location)}
+                            className="px-4 py-2.5 hover:bg-white/20 cursor-pointer transition-colors text-gray-800 flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                            </svg>
+                            {location}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => {
+                        const location = userLocation && userLocation.trim() !== '' ? userLocation : currentLocation;
+                        if (location && location.trim() !== '') {
+                          router.push(`/reserve?location=${encodeURIComponent(location)}`);
+                        } else {
+                          router.push('/reserve');
+                        }
+                      }}
+                      className="flex items-center justify-center gap-2 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Find Bikes
+                    </button>
+                    <button 
+                      onClick={() => router.push('/nft-store')}
+                      className="flex items-center justify-center gap-2 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-300 border border-white/30"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                      </svg>
+                      Buy Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-yellow-400">500+</div>
+                  <div className="text-sm text-gray-300">E-Bikes Available</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-yellow-400">24/7</div>
+                  <div className="text-sm text-gray-300">Service Access</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-yellow-400">50+</div>
+                  <div className="text-sm text-gray-300">Locations</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Content - Hero Image */}
+            <div className="relative">
+              <div className="relative z-10">
+                <Image 
+                  src={heroContent.image} 
+                  alt="E-bike" 
+                  width={600} 
+                  height={400}
+                  className="w-full h-auto object-contain drop-shadow-2xl transform hover:scale-105 transition-transform duration-700"
+                  priority
+                />
+              </div>
+              {/* Decorative elements */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/20 rounded-full blur-2xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Modern Featured Section */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
+              ⚡ Premium Collection
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+              Featured <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">E-Bikes</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Discover our handpicked selection of premium electric bikes designed for every adventure
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {dummyCarData.slice(0, 6).map((car, index) => (
+              <div key={car._id} className="transform hover:scale-105 transition-all duration-300">
+                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                  <CarCard car={car} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <button 
+              onClick={() => {
+                const location = userLocation && userLocation.trim() !== '' ? userLocation : currentLocation;
+                if (location && location.trim() !== '') {
+                  router.push(`/(reservation-management)/reserve?location=${encodeURIComponent(location)}`);
+                } else {
+                  router.push('/(reservation-management)/reserve');
+                }
+              }}
+              className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              Explore All E-Bikes
+              <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* Features Section */}
-      <section className="py-16 px-6 z-10 relative">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center p-6 rounded-lg bg-white bg-opacity-80 backdrop-blur-sm">
-            <div className="text-green-600 text-4xl mb-4">🚴</div>
-            <h3 className="text-xl font-semibold mb-3">Eco-Friendly</h3>
-            <p className="text-gray-600">Reduce your carbon footprint with our zero-emission bikes.</p>
+      <section className="py-20 bg-gray-900 text-white">
+        <div className="container mx-auto px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
+              Why Choose <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">CycleChain</span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Experience the future of urban mobility with our cutting-edge features
+            </p>
           </div>
-          
-          <div className="text-center p-6 rounded-lg bg-white bg-opacity-80 backdrop-blur-sm">
-            <div className="text-green-600 text-4xl mb-4">⚡</div>
-            <h3 className="text-xl font-semibold mb-3">Electric Options</h3>
-            <p className="text-gray-600">Effortless riding with our premium electric bike fleet.</p>
-          </div>
-          
-          <div className="text-center p-6 rounded-lg bg-white bg-opacity-80 backdrop-blur-sm">
-            <div className="text-green-600 text-4xl mb-4">📱</div>
-            <h3 className="text-xl font-semibold mb-3">Easy Reservation</h3>
-            <p className="text-gray-600">Book, unlock, and ride with our simple mobile app.</p>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                icon: "🔋",
+                title: "Long Range Battery",
+                description: "Up to 100km range on a single charge"
+              },
+              {
+                icon: "⚡",
+                title: "Fast Charging",
+                description: "0-80% charge in just 2 hours"
+              },
+              {
+                icon: "🛡️",
+                title: "Smart Security",
+                description: "GPS tracking and anti-theft protection"
+              },
+              {
+                icon: "📱",
+                title: "App Integration",
+                description: "Control everything from your smartphone"
+              }
+            ].map((feature, index) => (
+              <div key={index} className="text-center group">
+                <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <p className="text-gray-400">{feature.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-16 px-6 bg-gray-50 bg-opacity-70 z-10 relative">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-12">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center mb-4">1</div>
-              <p className="font-medium">Find a bike near you</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center mb-4">2</div>
-              <p className="font-medium">Reserve in seconds</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center mb-4">3</div>
-              <p className="font-medium">Unlock with your phone</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center mb-4">4</div>
-              <p className="font-medium">Ride and return anywhere</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Original sections with modern styling */}
+      <div className="bg-white">
+        <Testimonial />
+        <Newsletter />
+        <Footer />
+      </div>
 
-      {/* CTA Section */}
-      <section className="py-16 px-6 text-center z-10 relative">
-        <h2 className="text-3xl font-bold mb-6">Ready to Ride?</h2>
-        <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-          Join thousands of urban commuters who have made the switch to sustainable transportation.
-        </p>
-        <Link href="/checkout">
-          <button className="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-lg font-medium shadow-lg">
-            Get Started Today
+      {/* Floating Action Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <div className="relative group">
+          {/* Main FAB */}
+          <button className="w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center group-hover:rotate-45">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
           </button>
-        </Link>
-      </section>
 
-      {/* Footer */}
-      <footer className="py-8 text-center text-gray-500 text-sm border-t bg-white bg-opacity-80 z-10 relative">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-4 md:mb-0">
-              © {new Date().getFullYear()} CycleChain. All rights reserved.
-            </div>
-            <div className="flex space-6">
-              <Link href="/privacy" className="text-gray-500 hover:text-green-600 transition mx-3">Privacy Policy</Link>
-              <Link href="/terms" className="text-gray-500 hover:text-green-600 transition mx-3">Terms of Service</Link>
-              <Link href="/contact" className="text-gray-500 hover:text-green-600 transition mx-3">Contact Us</Link>
-            </div>
+          {/* Quick Actions Menu */}
+          <div className="absolute bottom-16 right-0 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 space-y-3">
+            <button 
+              onClick={() => router.push('/purchase')}
+              className="flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-800 px-4 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
+            >
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
+              </div>
+              <span className="font-medium">Buy E-Bike</span>
+            </button>
+
+            <button 
+              onClick={() => router.push('/my-nfts')}
+              className="flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-800 px-4 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
+            >
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <span className="text-sm">🏆</span>
+              </div>
+              <span className="font-medium">My NFTs</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                const location = userLocation && userLocation.trim() !== '' ? userLocation : currentLocation;
+                if (location && location.trim() !== '') {
+                  router.push(`/(reservation-management)/reserve?location=${encodeURIComponent(location)}`);
+                } else {
+                  router.push('/(reservation-management)/reserve');
+                }
+              }}
+              className="flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-800 px-4 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
+            >
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <span className="font-medium">Find Bikes</span>
+            </button>
           </div>
         </div>
-      </footer>
-    </div>
+      </div>
+
+      {/* Scroll to Top Button */}
+      <button 
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-6 left-6 w-12 h-12 bg-gray-800 hover:bg-gray-900 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center z-50 opacity-80 hover:opacity-100"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+      </button>
+    </main>
   );
 }

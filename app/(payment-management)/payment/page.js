@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ethers } from "ethers";
 import { loadStripe } from "@stripe/stripe-js";
@@ -8,7 +8,7 @@ import { convertLkrToEth } from "@/lib/currencyConverter";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const reservationId = searchParams.get("id");
 
@@ -695,5 +695,17 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <p className="text-gray-600">Loading checkout...</p>
+      </div>
+    }>
+      <CheckoutPageContent />
+    </Suspense>
   );
 }
