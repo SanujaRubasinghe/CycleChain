@@ -195,7 +195,7 @@ export default function DemoNFTViewer({
     return (
       <div className="w-full">
         {/* 3D Model Viewer */}
-        <div className="w-full h-64 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-lg overflow-hidden shadow-lg relative">
+        <div className="w-full h-64 bg-gradient-to-br from-white to-blue-100 rounded-lg overflow-hidden shadow-lg relative">
           {/* Gradient overlay for better visual appeal */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10 pointer-events-none z-10" />
           
@@ -304,7 +304,7 @@ export default function DemoNFTViewer({
   return (
     <div className="w-full">
       {/* 3D Model Viewer */}
-      <div className="w-full h-[500px] bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-lg overflow-hidden shadow-lg relative">
+      <div className="w-full h-[500px] bg-gradient-to-br from-white to-blue-100 rounded-lg overflow-hidden shadow-lg relative">
         {/* Gradient overlay for better visual appeal */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10 pointer-events-none z-10" />
         
