@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter();
   const search = useSearchParams();
   const callbackUrl = search.get("callbackUrl") || "/";
@@ -17,7 +17,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
-
   const onSubmit = async (e) => {
     e.preventDefault();
     setErr(""); setOk(""); setLoading(true);
@@ -172,5 +171,25 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-green-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 border border-green-100">
+          <div className="flex justify-center mb-6">
+            <div className="text-2xl font-bold text-green-600">CycleChain</div>
+          </div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

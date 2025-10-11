@@ -1,7 +1,7 @@
 import MintButton from "@/components/nft/MintButton";
 
 export default function BikeStorePage() {
-  const contractAddress = process.env.CONTRACT_ADDRESS;
+  const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
   const metadataCID = "QmPZbxMa9WjsXQmueGpUb4eodHJWv3jy8j6e1Qi1ecPA5Q";
 
   return (
