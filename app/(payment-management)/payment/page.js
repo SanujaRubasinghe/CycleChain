@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ethers } from "ethers";
 import { loadStripe } from "@stripe/stripe-js";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const reservationId = searchParams.get("id");
 
@@ -96,13 +96,13 @@ export default function CheckoutPage() {
       if (method === "crypto" && success) {
         if (!window.ethereum) throw new Error("MetaMask not installed");
 
-        const provider = new ethers.BrowserProvider(window.ethereum);
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         const signer = await provider.getSigner();
 
         const tx = await signer.sendTransaction({
           to: process.env.NEXT_PUBLIC_RECEIVER_WALLET,
-          value: ethers.parseEther("0.01"), // example amount
+          value: ethers.utils.parseEther("0.01"), // example amount
         });
 
         console.log("Transaction sent:", tx.hash);
@@ -300,5 +300,17 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <p className="text-gray-600">Loading checkout...</p>
+      </div>
+    }>
+      <CheckoutPageContent />
+    </Suspense>
   );
 }

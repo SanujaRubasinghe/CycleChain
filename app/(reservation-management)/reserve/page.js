@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -18,7 +18,7 @@ const ClientMap = dynamic(() => import('@/components/reservation/ClientMap'), {
   )
 });
 
-export default function BikeRentalSystem() {
+function BikeRentalSystemContent() {
   const [bikes, setBikes] = useState([]);
   const [selectedBike, setSelectedBike] = useState(null);
   const [showReservationForm, setShowReservationForm] = useState(false);
@@ -630,5 +630,21 @@ function ReservationForm({ bike, bikes, onCancel }) {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function BikeRentalSystem() {
+  return (
+    <Suspense fallback={
+      <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50'>
+        <div className="text-center p-8 bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-purple-600 border-r-blue-600 mx-auto"></div>
+          <p className="mt-6 text-lg font-semibold text-gray-700">Loading bike rental system...</p>
+          <p className="mt-2 text-sm text-gray-500">Finding available bikes near you</p>
+        </div>
+      </div>
+    }>
+      <BikeRentalSystemContent />
+    </Suspense>
   );
 }

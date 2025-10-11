@@ -6,7 +6,7 @@ export async function POST(request) {
   try {
     const { customerWallet, metadataUri } = await request.json();
 
-    const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC);
+    const provider = new ethers.providers.JsonRpcProvider(process.env.SEPOLIA_RPC);
     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
     const contract = new ethers.Contract(
       process.env.CONTRACT_ADDRESS,
