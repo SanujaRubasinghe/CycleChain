@@ -16,7 +16,7 @@ export async function POST(req, { params }) {
   }
 
   const { id } = await params;
-  const { method, amount } = await req.json();
+  const { method, amount, savedCardId } = await req.json();
 
   const reservation = await Reservation.findById(id);
   if (!reservation || reservation.userId !== session.user.id) {
@@ -38,6 +38,19 @@ export async function POST(req, { params }) {
       status: "pending",
     });
 
+    // If using a saved card, skip Stripe checkout and mark as ready for confirmation
+    if (method === "card" && savedCardId) {
+      payment.transactionId = `saved_card_${savedCardId}_${Date.now()}`;
+      payment.metadata = { savedCardId };
+      await payment.save();
+      
+      return NextResponse.json({ 
+        payment, 
+        usingSavedCard: true,
+        message: "Payment ready for confirmation with saved card" 
+      });
+    }
+
     if (method === "card") {
       const origin = req.headers.get("origin"); 
 
@@ -54,17 +67,13 @@ export async function POST(req, { params }) {
           },
         ],
         mode: "payment",
-        success_url: `${origin}/checkout-success?paymentId=${payment._id}`,
-        cancel_url: `${origin}/checkout-cancel?paymentId=${payment._id}`,
+        success_url: `${origin}/payment-success?paymentId=${payment._id}&reservationId=${id}`,
+        cancel_url: `${origin}/payment?id=${id}`,
         metadata: { paymentId: payment._id.toString(), reservationId: id },
       });
 
       payment.transactionId = sessionStripe.id;
-      payment.status = "completed";
-
-      reservation.status = "completed-paid";
       await payment.save();
-      await reservation.save();
 
       return NextResponse.json({ payment, sessionId: sessionStripe.id });
     }

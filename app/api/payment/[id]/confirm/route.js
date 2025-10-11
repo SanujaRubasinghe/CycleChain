@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dbConnect } from "@/lib/mongodb";
 import Payment from "@/models/Payment";
+import Reservation from "@/models/Reservation";
 
 export async function POST(req, { params }) {
   const session = await getServerSession(authOptions);
@@ -10,7 +11,7 @@ export async function POST(req, { params }) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const { reservationId } = params;
+  const { id: reservationId } = await params;
   const { paymentId, success, txHash } = await req.json();
 
   try {
@@ -21,11 +22,24 @@ export async function POST(req, { params }) {
       return NextResponse.json({ message: "Payment not found or forbidden" }, { status: 404 });
     }
 
-    payment.status = success ? "completed" : "failed";
-    if (txHash) payment.transactionId = txHash;
-    if (success) payment.completedAt = new Date();
+    // Only update if not already in final state
+    if (payment.status !== "completed" && payment.status !== "failed") {
+      payment.status = success ? "completed" : "failed";
+      if (txHash) payment.transactionId = txHash;
+      if (success && !payment.completedAt) payment.completedAt = new Date();
 
-    await payment.save();
+      await payment.save();
+    }
+
+    // Update reservation status to completed-paid
+    if (success) {
+      const reservation = await Reservation.findById(reservationId);
+      if (reservation) {
+        reservation.status = "completed-paid";
+        await reservation.save();
+        console.log(`Reservation ${reservationId} marked as completed-paid`);
+      }
+    }
 
     return NextResponse.json({ status: payment.status });
   } catch (err) {

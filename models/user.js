@@ -30,60 +30,38 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
-  
-  // NFT-related fields
-  nftProfile: {
-    totalNFTs: {
-      type: Number,
-      default: 0
+  cards: [
+    {
+      cardholderName: {
+        type: String,
+        required: true,
+      },
+      cardNumber: {
+        type: String,
+        required: true,
+      },
+      expiryMonth: {
+        type: String,
+        required: true,
+      },
+      expiryYear: {
+        type: String,
+        required: true,
+      },
+      cvv: {
+        type: String,
+        required: true,
+      },
+      isDefault: {
+        type: Boolean,
+        default: false,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
-    totalSpent: {
-      type: Number,
-      default: 0
-    },
-    favoriteModel: String,
-    firstNFTDate: Date,
-    lastNFTDate: Date,
-    preferredPaymentMethod: {
-      type: String,
-      enum: ['crypto', 'card', 'bank'],
-      default: 'crypto'
-    }
-  },
-  
-  // Shipping preferences
-  defaultShipping: {
-    address: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    phone: String,
-    country: {
-      type: String,
-      default: 'Sri Lanka'
-    }
-  },
-  
-  // Preferences
-  preferences: {
-    emailNotifications: {
-      type: Boolean,
-      default: true
-    },
-    nftUpdates: {
-      type: Boolean,
-      default: true
-    },
-    marketingEmails: {
-      type: Boolean,
-      default: false
-    },
-    displayPublicProfile: {
-      type: Boolean,
-      default: false
-    }
-  },
-  
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
