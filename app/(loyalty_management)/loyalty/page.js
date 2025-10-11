@@ -1,16 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 
 function LoyaltyManagement() {
+  const { data: session } = useSession();
   const [points, setPoints] = useState(0);
   const [distance, setDistance] = useState('');
   const [rideHistory, setRideHistory] = useState([]);
   const [redemptionHistory, setRedemptionHistory] = useState([]);
   const [lastRedemption, setLastRedemption] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const discountAvailable = points >= 50;
   const freeRideAvailable = points >= 100;
+
+  // Fetch loyalty points and ride history on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch ride history
+        const ridesRes = await fetch('/api/user/rides', { cache: 'no-store' });
+        console.log('Rides response status:', ridesRes.status);
+        if (ridesRes.ok) {
+          const ridesData = await ridesRes.json();
+          console.log('Rides data received:', ridesData);
+          
+          // Transform rides data to match the UI format
+          const formattedRides = ridesData.map(ride => ({
+            id: ride._id,
+            distance: ride.distance || 0,
+            pointsEarned: Math.floor(ride.distance || 0),
+            date: new Date(ride.end_time).toLocaleDateString(),
+            time: new Date(ride.end_time).toLocaleTimeString()
+          }));
+          setRideHistory(formattedRides);
+          
+          // Calculate total points from all rides (1km = 1 point)
+          const totalPoints = ridesData.reduce((sum, ride) => {
+            return sum + Math.floor(ride.distance || 0);
+          }, 0);
+          
+          console.log('Total points calculated from rides:', totalPoints);
+          setPoints(totalPoints);
+        } else {
+          console.error('Failed to fetch rides:', await ridesRes.text());
+        }
+      } catch (error) {
+        console.error('Failed to fetch loyalty data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchData();
+    }
+  }, [session]);
 
   const handleAddRide = () => {
     if (!distance || isNaN(distance) || distance <= 0) {
@@ -36,58 +84,105 @@ function LoyaltyManagement() {
     setDistance('');
   };
 
-  const handleRedeemDiscount = () => {
+  const handleRedeemDiscount = async () => {
     if (points < 50) {
       alert('You need at least 50 points to redeem a discount');
       return;
     }
 
-    const newPoints = points - 10;
-    setPoints(newPoints);
+    try {
+      const res = await fetch('/api/user/loyalty', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          pointsToDeduct: 10, 
+          reason: '20% Discount' 
+        })
+      });
 
-    const redemption = {
-      id: Date.now(),
-      type: 'discount',
-      reward: '20% Discount',
-      pointsDeducted: 10,
-      date: new Date().toLocaleDateString(),
-      time: new Date().toLocaleTimeString()
-    };
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to redeem discount');
+      }
 
-    setRedemptionHistory([redemption, ...redemptionHistory]);
-    setLastRedemption(redemption);
+      const data = await res.json();
+      setPoints(data.loyaltyPoints);
 
-    setTimeout(() => setLastRedemption(null), 5000);
+      const redemption = {
+        id: Date.now(),
+        type: 'discount',
+        reward: '20% Discount',
+        pointsDeducted: 10,
+        date: new Date().toLocaleDateString(),
+        time: new Date().toLocaleTimeString()
+      };
+
+      setRedemptionHistory([redemption, ...redemptionHistory]);
+      setLastRedemption(redemption);
+
+      setTimeout(() => setLastRedemption(null), 5000);
+    } catch (error) {
+      alert(error.message || 'Failed to redeem discount');
+    }
   };
 
-  const handleRedeemFreeRide = () => {
+  const handleRedeemFreeRide = async () => {
     if (points < 100) {
       alert('You need at least 100 points to redeem a free weekend ride');
       return;
     }
 
-    const newPoints = points - 20;
-    setPoints(newPoints);
+    try {
+      const res = await fetch('/api/user/loyalty', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          pointsToDeduct: 20, 
+          reason: 'Free Weekend Ride' 
+        })
+      });
 
-    const redemption = {
-      id: Date.now(),
-      type: 'free-ride',
-      reward: 'Free Weekend Ride',
-      pointsDeducted: 20,
-      date: new Date().toLocaleDateString(),
-      time: new Date().toLocaleTimeString()
-    };
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to redeem free ride');
+      }
 
-    setRedemptionHistory([redemption, ...redemptionHistory]);
-    setLastRedemption(redemption);
+      const data = await res.json();
+      setPoints(data.loyaltyPoints);
 
-    setTimeout(() => setLastRedemption(null), 5000);
+      const redemption = {
+        id: Date.now(),
+        type: 'free-ride',
+        reward: 'Free Weekend Ride',
+        pointsDeducted: 20,
+        date: new Date().toLocaleDateString(),
+        time: new Date().toLocaleTimeString()
+      };
+
+      setRedemptionHistory([redemption, ...redemptionHistory]);
+      setLastRedemption(redemption);
+
+      setTimeout(() => setLastRedemption(null), 5000);
+    } catch (error) {
+      alert(error.message || 'Failed to redeem free ride');
+    }
   };
 
   const getPointsToNextDiscount = () => points >= 50 ? 0 : 50 - points;
   const getPointsToNextFreeRide = () => points >= 100 ? 0 : 100 - points;
   const getDiscountProgressPercentage = () => points >= 50 ? 100 : (points / 50) * 100;
   const getFreeRideProgressPercentage = () => points >= 100 ? 100 : (points / 100) * 100;
+
+  if (loading || !session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your loyalty points...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-green-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -144,36 +239,8 @@ function LoyaltyManagement() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Add Ride & Rewards */}
+          {/* Rewards */}
           <div className="space-y-8">
-            {/* Add Ride */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Ride</h2>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-grow">
-                  <label htmlFor="distance" className="block text-sm font-medium text-gray-700 mb-1">
-                    Distance Ridden (km)
-                  </label>
-                  <input
-                    type="number"
-                    id="distance"
-                    value={distance}
-                    onChange={(e) => setDistance(e.target.value)}
-                    placeholder="Enter distance in kilometers"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <button
-                    onClick={handleAddRide}
-                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300"
-                  >
-                    Add Ride
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {/* Rewards */}
             <div className="bg-white rounded-2xl shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Available Rewards</h2>

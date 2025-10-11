@@ -1,6 +1,7 @@
 import { dbConnect } from "@/lib/mongodb";
 import Bike from "@/models/Bike";
 import Reservation from "@/models/Reservation";
+import User from "@/models/User";
 
 export async function POST(req, { params }) {
   await dbConnect();
@@ -26,8 +27,27 @@ export async function POST(req, { params }) {
 
   await reservation.save();
 
+  // Award loyalty points: 1 point per kilometer
+  const loyaltyPointsEarned = Math.floor(reservation.distance || 0);
+  if (loyaltyPointsEarned > 0) {
+    try {
+      await User.findByIdAndUpdate(
+        reservation.userId,
+        { $inc: { loyaltyPoints: loyaltyPointsEarned } },
+        { new: true }
+      );
+    } catch (error) {
+      console.error("Failed to update loyalty points:", error);
+      // Don't fail the request if loyalty points update fails
+    }
+  }
+
   return new Response(
-    JSON.stringify({ message: "Ride ended", reservation }),
+    JSON.stringify({ 
+      message: "Ride ended", 
+      reservation,
+      loyaltyPointsEarned 
+    }),
     { status: 200 }
   );
 }

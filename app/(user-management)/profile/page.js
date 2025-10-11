@@ -727,6 +727,10 @@ export default function UserProfilePage() {
                   <span className="font-semibold">{usage.totalDistance?.toFixed?.(1) || 0} km</span>
                 </div>
                 <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Loyalty Points</span>
+                  <span className="font-semibold text-green-600">⭐ {Math.floor(usage.totalDistance || 0)}</span>
+                </div>
+                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Member Since</span>
                   <span className="font-semibold">
                     {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "—"}
