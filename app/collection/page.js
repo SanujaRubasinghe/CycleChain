@@ -135,7 +135,7 @@ export default function CollectionPage() {
       <div className="p-6">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-bold text-gray-900">{bike.name}</h3>
-          <span className="text-2xl font-bold text-green-600">${bike.price.toLocaleString()}</span>
+          <span className="text-2xl font-bold text-green-600">LKR {bike.price.toLocaleString()}</span>
         </div>
         
         <p className="text-gray-600 mb-4">{bike.description}</p>
@@ -288,7 +288,7 @@ export default function CollectionPage() {
               <div className="mt-6 pt-6 border-t">
                 <div className="flex justify-between items-center">
                   <span className="text-3xl font-bold text-green-600">
-                    ${selectedBike.price.toLocaleString()}
+                    LKR {selectedBike.price.toLocaleString()}
                   </span>
                   <button
                     onClick={() => handlePurchase(selectedBike)}

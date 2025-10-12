@@ -111,7 +111,7 @@ export default function PurchasePage() {
                 </div>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold text-green-600">${bike.price}</span>
+                <span className="text-2xl font-bold text-green-600">LKR {bike.price}</span>
                 <button
                   onClick={() => handleBikeSelect(bike)}
                   className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -134,7 +134,7 @@ export default function PurchasePage() {
         <div className="bg-gray-100 p-4 rounded-lg mb-6">
           <h3 className="text-lg font-bold">{selectedBike.name}</h3>
           <p className="text-gray-600">{selectedBike.description}</p>
-          <p className="text-2xl font-bold text-green-600">${selectedBike.price}</p>
+          <p className="text-2xl font-bold text-green-600">LKR {selectedBike.price}</p>
         </div>
       )}
 
@@ -190,7 +190,7 @@ export default function PurchasePage() {
             disabled={paymentProcessing}
             className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:opacity-50"
           >
-            {paymentProcessing ? "Processing Payment..." : `Pay $${selectedBike?.price}`}
+            {paymentProcessing ? "Processing Payment..." : `Pay LKR ${selectedBike?.price}`}
           </button>
         </div>
       </form>

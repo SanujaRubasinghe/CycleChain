@@ -144,7 +144,7 @@ export default function NFTSuccessDisplay({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Purchase Price:</span>
-                      <span className="font-medium text-green-600">${bikeData.price.toLocaleString()}</span>
+                      <span className="font-medium text-green-600">LKR {bikeData.price.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Owner:</span>

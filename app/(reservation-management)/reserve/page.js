@@ -242,7 +242,7 @@ function BikeRentalSystemContent() {
       {/* Enhanced Reservation Form Modal */}
       {showReservationForm && selectedBike && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-white/20 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto reservation-modal-scrollbar border border-white/20 animate-in slide-in-from-bottom-4 duration-300">
             <div className="p-8">
               <div className="flex justify-between items-start mb-8">
                 <div className="flex items-center gap-4">
@@ -345,13 +345,17 @@ function ReservationForm({ bike, bikes, onCancel }) {
     setError("");
 
     try {
+      // Convert local datetime strings to UTC ISO strings for availability check
+      const startTimeUTC = new Date(formData.start_time + ':00').toISOString();
+      const endTimeUTC = new Date(formData.end_time + ':00').toISOString();
+
       const response = await fetch("/api/reservation/check-availability", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bike_id: formData.bike_id,
-          start_time: formData.start_time,
-          end_time: formData.end_time,
+          start_time: startTimeUTC,
+          end_time: endTimeUTC,
         }),
       });
 
@@ -388,10 +392,20 @@ function ReservationForm({ bike, bikes, onCancel }) {
     setError("");
 
     try {
+      // Convert local datetime strings to UTC ISO strings
+      const startTimeUTC = new Date(formData.start_time + ':00').toISOString();
+      const endTimeUTC = new Date(formData.end_time + ':00').toISOString();
+
+      const submitData = {
+        ...formData,
+        start_time: startTimeUTC,
+        end_time: endTimeUTC
+      };
+
       const response = await fetch("/api/reservation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) throw new Error("Failed to create reservation");

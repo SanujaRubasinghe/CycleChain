@@ -188,20 +188,32 @@ export default function About() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                name: "Sarah Chen",
-                role: "CEO & Co-Founder",
+                name: "Sanuja Rubasinghe",
+                role: "Developer & Co-Founder",
                 description: "Former Tesla engineer with a passion for sustainable transportation.",
                 image: "👩‍💼"
               },
               {
-                name: "Marcus Rodriguez",
-                role: "CTO & Co-Founder",
+                name: "Javid Mushtan",
+                role: "Developer",
                 description: "AI and robotics expert focused on smart mobility solutions.",
                 image: "👨‍💻"
               },
               {
-                name: "Aisha Patel",
-                role: "Head of Design",
+                name: "Inupama Caldera",
+                role: "Developer",
+                description: "Award-winning industrial designer creating beautiful, functional products.",
+                image: "👩‍🎨"
+              },
+              {
+                name: "Kawya Wettasinghe",
+                role: "Developer",
+                description: "Award-winning industrial designer creating beautiful, functional products.",
+                image: "👩‍🎨"
+              },
+              {
+                name: "Shanuka Yasanga",
+                role: "Developer & Co-Founder (ක්‍රිප්ටො වංචාකරු)",
                 description: "Award-winning industrial designer creating beautiful, functional products.",
                 image: "👩‍🎨"
               }

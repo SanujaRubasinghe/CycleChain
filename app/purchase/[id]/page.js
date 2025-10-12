@@ -201,7 +201,7 @@ export default function PurchasePage() {
           <div className="border-t pt-4">
             <div className="flex justify-between text-lg font-bold">
               <span>Total:</span>
-              <span className="text-green-600">${bike.price.toLocaleString()}</span>
+              <span className="text-green-600">LKR {bike.price.toLocaleString()}</span>
             </div>
             <p className="text-sm text-gray-500 mt-1">
               Includes NFT ownership certificate
@@ -317,12 +317,12 @@ export default function PurchasePage() {
         <h3 className="text-lg font-bold mb-4">Order Summary</h3>
         <div className="flex justify-between items-center">
           <span>{bike.name}</span>
-          <span className="font-bold">${bike.price.toLocaleString()}</span>
+          <span className="font-bold">LKR {bike.price.toLocaleString()}</span>
         </div>
         <div className="border-t mt-4 pt-4">
           <div className="flex justify-between items-center text-lg font-bold">
             <span>Total:</span>
-            <span className="text-green-600">${bike.price.toLocaleString()}</span>
+            <span className="text-green-600">LKR {bike.price.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -338,7 +338,7 @@ export default function PurchasePage() {
         disabled={paymentProcessing}
         className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 text-lg font-semibold"
       >
-        {paymentProcessing ? "Processing Payment..." : `Pay $${bike.price.toLocaleString()}`}
+        {paymentProcessing ? "Processing Payment..." : `Pay LKR ${bike.price.toLocaleString()}`}
       </button>
     </div>
   );
