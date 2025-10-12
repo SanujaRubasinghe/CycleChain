@@ -241,31 +241,31 @@ export default function Page() {
     </Suspense>
   )
 }*/
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { Suspense } from 'react';
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { Suspense } from "react";
 
 function UpdateFeedbackForm() {
-  const {data: session} = useSession()
+  const { data: session } = useSession();
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-    rating: 5
+    name: "",
+    email: "",
+    message: "",
+    rating: 5,
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [fetching, setFetching] = useState(true);
   const [userId, setUserId] = useState(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const feedbackId = searchParams.get('id');
+  const feedbackId = searchParams.get("id");
 
   useEffect(() => {
-    const storedUserId = session?.user?.id
+    const storedUserId = session?.user?.id;
     if (storedUserId) {
       setUserId(storedUserId);
     }
@@ -276,14 +276,14 @@ function UpdateFeedbackForm() {
       fetchFeedback();
     } else if (feedbackId && !userId) {
       const timer = setTimeout(() => {
-        const storedUserId = localStorage.getItem('feedbackUserId');
+        const storedUserId = localStorage.getItem("feedbackUserId");
         if (storedUserId) {
           setUserId(storedUserId);
         }
       }, 100);
       return () => clearTimeout(timer);
     } else {
-      setMessage('No feedback ID provided');
+      setMessage("No feedback ID provided");
       setFetching(false);
     }
   }, [feedbackId, userId]);
@@ -292,26 +292,26 @@ function UpdateFeedbackForm() {
     try {
       setFetching(true);
       const response = await fetch(`/api/feedback/${feedbackId}`);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.userId !== userId) {
-          setMessage('You can only edit your own feedback');
+          setMessage("You can only edit your own feedback");
           return;
         }
-        
+
         setFormData({
-          name: data.name || session?.user?.name || '',
-          email: data.email || session?.user?.email || '',
-          message: data.message || '',
-          rating: data.rating || 5
+          name: data.name || session?.user?.name || "",
+          email: data.email || session?.user?.email || "",
+          message: data.message || "",
+          rating: data.rating || 5,
         });
       } else {
-        setMessage('Failed to fetch feedback');
+        setMessage("Failed to fetch feedback");
       }
     } catch (error) {
-      setMessage('Error fetching feedback');
+      setMessage("Error fetching feedback");
     } finally {
       setFetching(false);
     }
@@ -319,22 +319,22 @@ function UpdateFeedbackForm() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'rating' ? parseInt(value) : value
+      [name]: name === "rating" ? parseInt(value) : value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
+    setMessage("");
 
     try {
       const response = await fetch(`/api/feedback/${feedbackId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
@@ -342,15 +342,15 @@ function UpdateFeedbackForm() {
       const result = await response.json();
 
       if (response.ok) {
-        setMessage('Feedback updated successfully!');
+        setMessage("Feedback updated successfully!");
         setTimeout(() => {
-          router.push('/profile');
+          router.push("/profile");
         }, 1500);
       } else {
-        setMessage(result.message || 'Failed to update feedback');
+        setMessage(result.message || "Failed to update feedback");
       }
     } catch (error) {
-      setMessage('Error updating feedback');
+      setMessage("Error updating feedback");
     } finally {
       setLoading(false);
     }
@@ -374,13 +374,15 @@ function UpdateFeedbackForm() {
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">
             Edit Your Feedback
           </h2>
-          
+
           {message && (
-            <div className={`mb-6 p-4 rounded-md ${
-              message.includes('successfully') 
-                ? 'bg-green-50 text-green-800 border border-green-200' 
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}>
+            <div
+              className={`mb-6 p-4 rounded-md ${
+                message.includes("successfully")
+                  ? "bg-green-50 text-green-800 border border-green-200"
+                  : "bg-red-50 text-red-800 border border-red-200"
+              }`}
+            >
               {message}
             </div>
           )}
@@ -388,7 +390,10 @@ function UpdateFeedbackForm() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Full Name *
                 </label>
                 <input
@@ -404,7 +409,10 @@ function UpdateFeedbackForm() {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Email Address *
                 </label>
                 <input
@@ -421,7 +429,10 @@ function UpdateFeedbackForm() {
             </div>
 
             <div>
-              <label htmlFor="rating" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="rating"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Rating *
               </label>
               <select
@@ -441,7 +452,10 @@ function UpdateFeedbackForm() {
             </div>
 
             <div>
-              <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="message"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Message *
               </label>
               <textarea
@@ -461,11 +475,11 @@ function UpdateFeedbackForm() {
                 disabled={loading || fetching}
                 className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 disabled:transform-none"
               >
-                {loading ? 'Updating...' : 'Update Feedback'}
+                {loading ? "Updating..." : "Update Feedback"}
               </button>
               <button
                 type="button"
-                onClick={() => router.push('/my_feedbacks')}
+                onClick={() => router.push("/profile")}
                 disabled={fetching}
                 className="bg-gray-300 hover:bg-gray-400 disabled:bg-gray-200 text-gray-800 font-semibold py-3 px-8 rounded-lg transition duration-200 ease-in-out"
               >
@@ -484,5 +498,5 @@ export default function Page() {
     <Suspense fallback={<div>Loading...</div>}>
       <UpdateFeedbackForm />
     </Suspense>
-  )
+  );
 }
