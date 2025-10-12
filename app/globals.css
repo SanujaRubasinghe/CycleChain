@@ -97,6 +97,26 @@ html {
   background: #94a3b8;
 }
 
+/* Reservation form modal scrollbar */
+.reservation-modal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.reservation-modal-scrollbar::-webkit-scrollbar-track {
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+.reservation-modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 10px;
+  border: 1px solid #f9fafb;
+}
+
+.reservation-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #059669;
+}
+
 /* Glassmorphism effect */
 .glass {
   background: rgba(255, 255, 255, 0.1);

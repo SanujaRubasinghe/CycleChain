@@ -1153,63 +1153,102 @@ export default function UserProfilePage() {
                     {cards.map((card) => (
                       <div
                         key={card._id}
-                        className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden"
+                        className="group relative bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-3xl p-6 text-white shadow-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] overflow-hidden border border-gray-700"
                       >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
-                        
+                        {/* Metallic shine effect */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/20"></div>
+                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 opacity-30"></div>
+
+                        {/* Animated light reflections */}
+                        <div className="absolute top-4 right-8 w-20 h-20 bg-gradient-to-br from-white/20 to-transparent rounded-full blur-sm group-hover:blur-md transition-all duration-500"></div>
+                        <div className="absolute bottom-8 left-12 w-16 h-16 bg-gradient-to-br from-blue-400/20 to-transparent rounded-full blur-sm group-hover:blur-md transition-all duration-500 delay-100"></div>
+
+                        {/* Visa-style holographic effect */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
                         <div className="relative z-10">
+                          {/* Header with Visa-style elements */}
                           <div className="flex justify-between items-start mb-8">
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-3">
                               {card.isDefault && (
-                                <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs font-medium w-fit">
-                                  Default
-                                </span>
+                                <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 px-4 py-1.5 rounded-full border border-yellow-300/30 shadow-lg backdrop-blur-sm">
+                                  <span className="text-xs font-bold text-black flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                                    DEFAULT
+                                  </span>
+                                </div>
                               )}
-                              <span className="text-xs opacity-90 font-medium">
-                                {detectCardType(card.cardNumber).type}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl">{detectCardType(card.cardNumber).icon}</span>
+                                <span className="text-xs font-bold text-gray-300 bg-gray-700/50 px-3 py-1 rounded-full border border-gray-600">
+                                  {detectCardType(card.cardNumber).type}
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-2xl">💳</div>
+
+                            {/* Visa-style contactless chip */}
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="w-10 h-7 bg-gradient-to-br from-gray-300 to-gray-500 rounded-md shadow-inner relative border border-gray-400">
+                                <div className="absolute inset-0.5 bg-gradient-to-br from-gray-200 to-gray-400 rounded-sm"></div>
+                                <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
+                                <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
+                                <div className="absolute bottom-0.5 left-0.5 w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
+                                <div className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
+                              </div>
+                              {/* Visa logo area */}
+                              <div className="text-xs font-bold text-gray-400 tracking-widest">
+                                VISA
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="mb-6">
-                            <div className="text-xl tracking-wider font-mono">
+                          {/* Card number with Visa-style formatting */}
+                          <div className="mb-8">
+                            <div className="text-xl tracking-[0.2em] font-mono font-bold text-white drop-shadow-lg">
                               {card.cardNumber}
                             </div>
-                          </div>
-
-                          <div className="flex justify-between items-end">
-                            <div>
-                              <div className="text-xs opacity-75 mb-1">Cardholder</div>
-                              <div className="font-medium">{card.cardholderName}</div>
-                            </div>
-                            <div>
-                              <div className="text-xs opacity-75 mb-1">Expires</div>
-                              <div className="font-medium">{card.expiryMonth}/{card.expiryYear}</div>
+                            <div className="text-xs text-gray-400 mt-1 tracking-wider font-medium">
+                              CARD NUMBER
                             </div>
                           </div>
 
-                          <div className="flex space-x-2 mt-4">
+                          {/* Card details in Visa style */}
+                          <div className="flex justify-between items-end mb-6">
+                            <div className="flex-1">
+                              <div className="text-xs text-gray-400 mb-1 tracking-wider font-bold uppercase">Cardholder Name</div>
+                              <div className="font-bold text-white text-lg tracking-wide">
+                                {card.cardholderName}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-gray-400 mb-1 tracking-wider font-bold uppercase">Valid Thru</div>
+                              <div className="font-bold text-white text-lg">
+                                {card.expiryMonth}/{card.expiryYear}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action buttons with dark theme */}
+                          <div className="flex flex-wrap gap-2">
                             {!card.isDefault && (
                               <button
                                 onClick={() => setDefaultCard(card._id)}
-                                className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm transition-colors"
+                                className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
                               >
-                                Set as Default
+                                ⭐ SET DEFAULT
                               </button>
                             )}
                             <button
                               onClick={() => startEditCard(card)}
-                              className="bg-yellow-500 bg-opacity-80 hover:bg-opacity-100 px-4 py-2 rounded-lg text-sm transition-colors"
+                              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                             >
-                              Edit
+                              EDIT
                             </button>
                             <button
                               onClick={() => deleteCard(card._id)}
-                              className="bg-red-500 bg-opacity-80 hover:bg-opacity-100 px-4 py-2 rounded-lg text-sm transition-colors"
+                              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                             >
-                              Delete
+                              DELETE
                             </button>
                           </div>
                         </div>

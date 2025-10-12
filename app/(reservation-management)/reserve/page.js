@@ -242,7 +242,7 @@ function BikeRentalSystemContent() {
       {/* Enhanced Reservation Form Modal */}
       {showReservationForm && selectedBike && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-white/20 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto reservation-modal-scrollbar border border-white/20 animate-in slide-in-from-bottom-4 duration-300">
             <div className="p-8">
               <div className="flex justify-between items-start mb-8">
                 <div className="flex items-center gap-4">
