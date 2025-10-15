@@ -30,34 +30,32 @@ export async function POST(request, { params }) {
             return NextResponse.json({error: "Unauthorized action"}, {status: 401})
         }
 
-        const bike = await Bike.find({name: qrCode.name})
+        const bike = await Bike.find({name: 'B001'})
         if (!bike) {
             return NextResponse.json({error: "Bike not found"}, {status: 404})
         }
 
-        // const topic = `bike/B001/command`
-        // const message = 'unlock'
+        const topic = `bike/B001/command`
+        const message = 'unlock'
 
-        // client.publish(topic, message, {qos: 1}, (err) => {
-        // if (err) {
-        //     return new Response(JSON.stringify({success: false, error: err.message}), {status: 500})
-        // }
-        // console.log("MQTT command sent:",topic,message)
-        // })
+        client.publish(topic, message, {qos: 1}, (err) => {
+        if (err) {
+            return new Response(JSON.stringify({success: false, error: err.message}), {status: 500})
+        }
+        console.log("MQTT command sent:",topic,message)
+        })
 
-        // const updatedBike = await Bike.findOneAndUpdate(
-        //     {name: qrCode},
-        //     {
-        //         $set: {
-        //             isLocked: false
-        //         }
-        //     },
-        //     {new: true}
-        // )
+        const updatedBike = await Bike.findOneAndUpdate(
+            {name: 'B001'},
+            {
+                $set: {
+                    isLocked: false
+                }
+            },
+            {new: true}
+        )
 
-        // return NextResponse.json({updatedBike}, {status: 200})
-
-        return NextResponse.json({message: "success"})
+        return NextResponse.json({updatedBike}, {status: 200})
 
     } catch (err) {
         console.error(err)

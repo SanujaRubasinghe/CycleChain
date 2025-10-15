@@ -1,5 +1,6 @@
 "use client";
 
+import { NEXT_ACTION_NOT_FOUND_HEADER } from "next/dist/client/components/app-router-headers";
 import { useEffect, useState, useMemo } from "react";
 
 const LABEL = {
@@ -71,27 +72,27 @@ export default function StorePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-bold text-green-700">Cycle Store</h1>
-            <p className="text-green-600 mt-1">Find all the accessories for your ride</p>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-green-600 via-green-700 to-emerald-600 bg-clip-text text-transparent">🚴 Cycle Store</h1>
+            <p className="text-gray-600 mt-2 text-lg">Premium accessories for your electric bike journey</p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <input
               type="text"
-              placeholder="Search items…"
+              placeholder="🔍 Search accessories…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="input w-full sm:w-72 border border-green-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+              className="w-full sm:w-80 border-2 border-green-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 transition-all"
             />
             <select
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              className="input border border-green-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+              className="border-2 border-green-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 transition-all"
             >
               <option value="all">All categories</option>
               {Object.keys(LABEL).map((key) => (
@@ -100,57 +101,58 @@ export default function StorePage() {
             </select>
             <a
               href="/store/cart"
-              className="bg-green-700 hover:bg-green-800 text-white font-semibold rounded-lg px-4 py-2 flex items-center justify-center transition"
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl px-6 py-3 flex items-center justify-center transition-all shadow-lg hover:shadow-xl"
             >
-              Cart
+              🛒 Cart
             </a>
           </div>
         </div>
 
         {/* Loading/Error */}
-        {loading && <div className="text-green-700 font-medium">Loading products...</div>}
-        {err && <div className="text-red-500 font-medium">{err}</div>}
+        {loading && <div className="text-green-600 font-medium text-center py-8">⏳ Loading premium products...</div>}
+        {err && <div className="text-red-500 font-medium text-center py-8 bg-red-50 rounded-xl border border-red-200">{err}</div>}
         {!loading && !err && filteredItems.length === 0 && (
-          <div className="text-green-700 font-medium">No items match your search.</div>
+          <div className="text-gray-600 font-medium text-center py-8">No items match your search. Try adjusting your filters!</div>
         )}
 
         {/* Product Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-8">
           {filteredItems.map((p) => (
             <article
               key={p._id}
-              className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-200 overflow-hidden flex flex-col"
+              className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col transform hover:scale-105 border border-green-100 hover:border-green-200"
             >
-              {/* Product Image */}
-              <div className="relative h-48 bg-gray-100 border-b border-green-200">
+              <div className="relative h-56 bg-gradient-to-br from-green-50 to-white border-b border-green-200 overflow-hidden">
                 {p.image ? (
                   <img
-                    src={p.image}
+                    src={`http://localhost:3001${p.image}`}
                     alt={p.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-green-400">
-                    No Image
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">
+                    📦
                   </div>
                 )}
+                <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                  {LABEL[p.category] || p.category}
+                </div>
               </div>
 
               {/* Product Info */}
-              <div className="flex-1 p-4 flex flex-col justify-between">
+              <div className="flex-1 p-6 flex flex-col justify-between">
                 <div>
-                  <span className="text-sm text-green-600 font-medium">{LABEL[p.category] || p.category}</span>
-                  <h3 className="text-lg font-semibold text-green-700 mt-1 line-clamp-2">{p.title}</h3>
-                  <div className="text-green-700 font-bold mt-2">LKR {p.price}</div>
+                  <h3 className="text-xl font-bold text-gray-800 mt-1 line-clamp-2 leading-tight">{p.title}</h3>
+                  <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mt-3">LKR {p.price}</div>
                 </div>
 
                 {/* Add to Cart Button */}
                 <button
                   onClick={() => addToCart(p._id)}
-                  className="mt-4 bg-green-700 hover:bg-green-800 text-white font-semibold py-2 rounded-lg transition"
+                  className="mt-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Add to Cart
+                  Add to Cart 🛒
                 </button>
               </div>
             </article>

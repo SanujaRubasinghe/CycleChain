@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
 import Feedback from '@/models/Feedback';
 
-// GET specific feedback by ID
 export async function GET(request, { params }) {
   try {
     await dbConnect();
@@ -26,14 +25,13 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT update feedback
+
 export async function PUT(request, { params }) {
   try {
     await dbConnect();
     const body = await request.json();
     const {id} = await params
     
-    // Validate required fields
     const { name, email, message, rating, userId} = body;
     
     if (!name || !email || !message || !rating) {
@@ -43,7 +41,6 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Validate rating range
     if (rating < 1 || rating > 5) {
       return NextResponse.json(
         { message: 'Rating must be between 1 and 5' },
@@ -51,7 +48,6 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Find and update feedback
     const feedback = await Feedback.findById(id);
     
     if (!feedback) {

@@ -10,12 +10,11 @@ export async function POST(request) {
         const data = await request.json();
         console.log("Received data:", data);
 
-        // Map frontend field names to schema field names
         const reservationData = {
-            userId: data.user_id || data.userId, // Handle both user_id and userId
-            bikeId: data.bike_id || data.bikeId, // Handle both bike_id and bikeId
-            start_time: data.start_time || data.startTime,
-            end_time: data.end_time || data.endTime,
+            userId: data.user_id || data.userId, 
+            bikeId: data.bike_id || data.bikeId, 
+            start_time: new Date(data.start_time || data.startTime),
+            end_time: new Date(data.end_time || data.endTime),
             start_location: data.start_location || data.startLocation,
             end_location: data.end_location || data.endLocation,
             distance: data.distance,

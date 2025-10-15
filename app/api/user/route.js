@@ -48,6 +48,7 @@ export async function GET() {
       email: user.email,
       username: user.username,
       role: user.role,
+      loyaltyPoints: user.loyaltyPoints || 0,
       usage: summary,
     },
     { headers: { "Cache-Control": "no-store" } }
@@ -109,7 +110,7 @@ export async function DELETE() {
 
   // Delete related data (adjust to your needs)
   await Promise.all([
-    Ride.deleteMany({ user: session.user.id }),
+    Reservation.deleteMany({ user: session.user.id }),
     Cart.deleteOne({ user: session.user.id }).catch(() => {}),
   ]);
   await User.findByIdAndDelete(session.user.id);

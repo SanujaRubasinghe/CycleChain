@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react'
-import { assets, dummyUserData } from '../../assets/assets'
-import { Link } from 'react-router-dom';
+import { assets, dummyUserData } from '@/public/assets/assets'
+import Link from 'next/link';
 
 function NavbarOwner() {
 
